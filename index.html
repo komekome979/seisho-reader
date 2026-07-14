@@ -132,6 +132,7 @@
     <button class="btn primary" id="go">取得して解析</button>
   </div>
   <div class="examples">例：<b data-ex="大気汚染防止法">大気汚染防止法</b>／<b data-ex="宅地建物取引業法">宅地建物取引業法</b>／<b data-ex="水質汚濁防止法">水質汚濁防止法</b>／<b data-ex="343AC0000000097">法令ID直接指定</b></div>
+  <label class="toggle" style="margin:8px 2px 2px"><input type="checkbox" id="deep"> 徹底探索：施行令・施行規則以外の内閣府令・他省庁の府省令も、制定文をたどって探す（やや時間がかかります）</label>
 
   <details class="adv">
     <summary>受け皿の政省令を手動で指定する（自動発見に失敗するとき）</summary>
@@ -145,6 +146,7 @@
 
   <div class="toolrow">
     <label class="toggle"><input type="checkbox" id="tidy"> 読みやすく整える（算用数字・句点改行）</label>
+    <button class="btn ghost" id="csv" style="display:none">CSVで表を書き出す</button>
   </div>
 
   <div class="summary" id="summary">
@@ -218,10 +220,44 @@ function isBlanket(s){
     || /(前各?(?:条|項|号)|前[〇零一二三四五六七八九十]+条)[^。]{0,20}(のほか|に定めるもののほか)/.test(s)
     || /必要な(事項|細目)は[^。]{0,10}(政令|省令|府令|規則)で定める/.test(s);
 }
-function extractCitations(body){
+const NAME=/[一-龥ぁ-んァ-ヶ々ー]/;
+const LAWTAIL=/(?:法|令|規則|条例|憲法)$/;
+const LAWNUM=/（(?:明治|大正|昭和|平成|令和)[〇零一二三四五六七八九十百千]+年(?:法律|政令|勅令|府令|省令|規則|条例)第[〇零一二三四五六七八九十百千]+号/g;
+function buildAnchors(body, parentTitle){
+  const A=[]; const push=(p,par)=>A.push({pos:p,parent:par}); let i,m;
+  if(parentTitle){ i=0; while((i=body.indexOf(parentTitle,i))!==-1){ push(i,true); i+=parentTitle.length; } }
+  i=0; while((i=body.indexOf("本法",i))!==-1){ push(i,true); i+=2; }
+  i=0; while((i=body.indexOf("同法",i))!==-1){ push(i,false); i+=2; }
+  i=0; while((i=body.indexOf("この政令",i))!==-1){ push(i,false); i+=4; }
+  i=0; while((i=body.indexOf("この省令",i))!==-1){ push(i,false); i+=4; }
+  LAWNUM.lastIndex=0;
+  while((m=LAWNUM.exec(body))!==null){
+    const nm=body.slice(Math.max(0,m.index-40),m.index).match(/([一-龥ぁ-んァ-ヶ々ー]+)$/);
+    const name=nm?nm[1]:"";
+    const isP=!!(parentTitle&&(name===parentTitle||name.endsWith(parentTitle)||(name.length>=4&&parentTitle.endsWith(name))));
+    push(nm?m.index-nm[1].length:m.index, isP);
+  }
+  let R=/法(?=第)/g; while((m=R.exec(body))!==null){ if(m.index===0||!NAME.test(body[m.index-1])) push(m.index,true); }
+  R=/(?:令|規則)(?=第)/g; while((m=R.exec(body))!==null){ if(m.index===0||!NAME.test(body[m.index-1])) push(m.index,false); }
+  A.sort((a,b)=>a.pos-b.pos); return A;
+}
+function extractCitations(body, parentTitle){
+  const anchors=buildAnchors(body, parentTitle||"");
+  const nearest=(idx)=>{ let sc=true; for(const a of anchors){ if(a.pos<=idx) sc=a.parent; else break; } return sc; };
   const out=[]; let m; CITE_RE.lastIndex=0;
   while((m=CITE_RE.exec(body))!==null){
-    out.push({ref:m[1]||"",art:kanjiToInt(m[2]),branch:m[3]?kanjiToInt(m[3]):null,para:m[4]?kanjiToInt(m[4]):null,item:m[5]?kanjiToInt(m[5]):null,text:m[0]});
+    const ref=m[1]||""; let toParent;
+    if(ref==="令"||ref==="規則"||ref==="附則") toParent=false;
+    else if(ref==="本法") toParent=true;
+    else if(ref==="法"){
+      const pc=body[m.index-1];
+      if(m.index===0 || !NAME.test(pc)) toParent=true;
+      else { const nm=body.slice(Math.max(0,m.index-20),m.index+1).match(/([一-龥ぁ-んァ-ヶ々ー]+)$/); const name=nm?nm[1]:"";
+        if(parentTitle&&(name===parentTitle||name.endsWith(parentTitle))) toParent=true;
+        else if(LAWTAIL.test(name)) toParent=false;
+        else toParent=nearest(m.index); }
+    } else toParent=nearest(m.index);
+    out.push({ref,art:kanjiToInt(m[2]),branch:m[3]?kanjiToInt(m[3]):null,para:m[4]?kanjiToInt(m[4]):null,item:m[5]?kanjiToInt(m[5]):null,text:m[0],toParent});
   }
   return out;
 }
@@ -295,17 +331,18 @@ function splitChildSegments(text){
   return segs.map(s=>{
     const law=s.law; let doc="";
     if(/施行令|政令/.test(law)) doc="政令"; else if(/施行規則|規則|省令|府令/.test(law)) doc="省令";
-    const arts=splitArticles(s.buf.join("\n")).map(a=>({law,docType:doc,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body)}));
+    const arts=splitArticles(s.buf.join("\n")).map(a=>({law,docType:doc,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body,"")}));
     return arts;
   }).flat();
 }
 
 /* ---------- 解析コア ---------- */
 let MATCHDATA={};
+let LAST_TITLE="";
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 function analyzeCore(parentArts, childArticles, lawTitle){
-  MATCHDATA={};
+  MATCHDATA={}; LAST_TITLE=lawTitle||"";
   const reader=document.getElementById("reader");
   if(!parentArts.length){ reader.innerHTML='<div class="empty">条文が取得・抽出できませんでした。</div>'; document.getElementById("summary").classList.remove("show"); return; }
   let counts={ok:0,warn:0,none:0}, html="", key=0;
@@ -320,10 +357,10 @@ function analyzeCore(parentArts, childArticles, lawTitle){
       const p=paraAt(body,d.start), tt=targetType(d.text), blanket=isBlanket(sentenceAround(body,d.start));
       let targets=[];
       for(const ca of childArticles){
-        if(!typeOk(tt,ca.docType||"")) continue;
+        if(!typeAllows(tt,ca.docType||"")) continue;
         let hit=null,loose=null;
         for(const c of ca.cites){
-          if((c.ref===""||c.ref==="法"||c.ref==="本法") && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
+          if(c.toParent && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
             if(c.para===p) hit=c; else if(c.para==null && !loose) loose=c;
           }
         }
@@ -334,7 +371,7 @@ function analyzeCore(parentArts, childArticles, lawTitle){
       const status = targets.length ? "ok" : (blanket?"warn":"none");
       counts[status]++;
       const k="k"+(key++);
-      MATCHDATA[k]={status,tt,para:p,artNum:art.numText,matches:targets};
+      MATCHDATA[k]={status,tt,para:p,artNum:art.numText,caption:art.caption,deleg:d.text,matches:targets};
       const tag = status==="ok" ? (targets.length>1?targets.length+"件":"確定") : (status==="warn"?"要確認":"未整備");
       bodyHtml+='<button class="dl '+status+'" data-k="'+k+'">'+esc(d.text)+'<span class="tag">▸'+tag+'</span></button>';
       cursor=d.end;
@@ -352,6 +389,7 @@ function analyzeCore(parentArts, childArticles, lawTitle){
   document.getElementById("t-warn").textContent=counts.warn;
   document.getElementById("t-none").textContent=counts.none;
   document.getElementById("summary").classList.toggle("show",total>0);
+  document.getElementById("csv").style.display = total>0 ? "inline-block" : "none";
   applyTidy();
 }
 
@@ -388,24 +426,82 @@ function applyTidy(){
 }
 document.getElementById("tidy").addEventListener("change",applyTidy);
 
+/* ---------- CSV書き出し ---------- */
+function csvCell(s){ s=String(s==null?"":s); return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function buildCSV(){
+  const label={ok:"確定",warn:"要確認",none:"未整備"};
+  const rows=[["親法令","条","見出し","項","委任表現","委任先種別","確度","受け皿法令","受け皿の条","根拠条項"]];
+  for(const k of Object.keys(MATCHDATA)){
+    const d=MATCHDATA[k];
+    if(d.matches&&d.matches.length){
+      for(const t of d.matches) rows.push([LAST_TITLE,d.artNum,d.caption,d.para,d.deleg,d.tt,label[d.status],t.law,t.numText,t.cite]);
+    }else{
+      rows.push([LAST_TITLE,d.artNum,d.caption,d.para,d.deleg,d.tt,label[d.status],"","",""]);
+    }
+  }
+  return rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
+}
+function downloadCSV(){
+  if(!Object.keys(MATCHDATA).length){ setStatus("先に「取得して解析」で表を作ってください。",true); return; }
+  const csv="\ufeff"+buildCSV();
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=(LAST_TITLE||"委任対照表")+"_委任対照表.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.getElementById("csv").addEventListener("click",downloadCSV);
+
 /* ---------- e-Gov API 取得 ---------- */
 function setStatus(msg,isErr){ const s=document.getElementById("status"); s.className="status"+(isErr?" err":""); s.innerHTML=msg; }
-async function apiLaws(title){
-  const r=await fetch(API+"/laws?law_title="+encodeURIComponent(title)+"&limit=5&response_format=json");
+async function apiLaws(title, limit){
+  const r=await fetch(API+"/laws?law_title="+encodeURIComponent(title)+"&limit="+(limit||5)+"&response_format=json");
   if(!r.ok) throw new Error("laws API "+r.status); return r.json();
 }
 async function apiLawData(id){
   const r=await fetch(API+"/law_data/"+encodeURIComponent(id)+"?response_format=json&law_full_text_format=json");
   if(!r.ok) throw new Error("law_data API "+r.status); return r.json();
 }
-function pickTitle(l){ return ((l.revision_info||l.current_revision_info||{}).law_title)||""; }
+async function apiKeyword(keyword, limit){
+  const r=await fetch(API+"/keyword?keyword="+encodeURIComponent(keyword)+"&limit="+(limit||80)+"&response_format=json");
+  if(!r.ok) throw new Error("keyword API "+r.status); return r.json();
+}
+function pickTitle(l){ return ((l.revision_info||l.current_revision_info||l.law_info||{}).law_title)||((l.law_info||{}).law_title)||""; }
 function pickId(l){ return (l.law_info||{}).law_id; }
+function pickNum(l){ return ((l.law_info||{}).law_num)||((l.revision_info||{}).law_num)||""; }
+function classifyDocType(lawNum){
+  if(!lawNum) return "";
+  if(/(政令|勅令)/.test(lawNum)) return "政令";
+  if(/内閣府令/.test(lawNum)) return "内閣府令";
+  if(/(省令|府令|規則|命令)/.test(lawNum)) return "省令";
+  return "";
+}
+function enactHeadText(fullText){
+  const es=findFirst(fullText,"EnactStatement"); let t=es?textOf(es):"";
+  const mp=findFirst(fullText,"MainProvision");
+  if(mp){ const a=findAll(mp,"Article")[0]; if(a) t+="\n"+textOf(a).slice(0,240); }
+  return t;
+}
+function isEnactedUnder(enactText, parentTitle, parentNum){
+  if(!enactText) return false;
+  if(!/(に基づ|の規定により|を実施するため)/.test(enactText)) return false;
+  if(parentNum && enactText.includes(parentNum)) return true;
+  if(parentTitle && enactText.includes(parentTitle)) return true;
+  return false;
+}
+function typeAllows(dt, doc){
+  if(!doc) return true;
+  if(dt==="政令") return doc==="政令";
+  if(dt==="政省令") return true;
+  return doc!=="政令";
+}
 async function findLaw(q){
-  if(/^[0-9A-Za-z]{10,}$/.test(q)) return {id:q,title:q};
+  if(/^[0-9A-Za-z]{10,}$/.test(q)) return {id:q,title:q,num:""};
   const d=await apiLaws(q); const laws=(d&&d.laws)||[];
   if(!laws.length) return null;
   let hit=laws.find(l=>pickTitle(l)===q)||laws[0];
-  return {id:pickId(hit),title:pickTitle(hit)||q};
+  return {id:pickId(hit),title:pickTitle(hit)||q,num:pickNum(hit)};
 }
 async function discoverChildren(title){
   const out=[];
@@ -413,8 +509,31 @@ async function discoverChildren(title){
     try{
       const d=await apiLaws(title+suf); const laws=(d&&d.laws)||[];
       const l=laws.find(x=>pickTitle(x).includes(suf));
-      if(l) out.push({title:pickTitle(l),id:pickId(l),docType: suf==="施行令"?"政令":"省令"});
+      if(l){ const dt=classifyDocType(pickNum(l))||(suf==="施行令"?"政令":"省令"); out.push({title:pickTitle(l),id:pickId(l),docType:dt}); }
     }catch(e){}
+  }
+  return out;
+}
+async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
+  const seen={}, cand=[];
+  const queries=[]; if(parentNum) queries.push(parentNum); if(parentTitle) queries.push(parentTitle);
+  for(const q of queries){
+    let data; try{ data=await apiKeyword(q, 80); }catch(e){ continue; }
+    for(const it of (data.items||data.laws||[])){
+      const li=it.law_info||it; const id=li.law_id, num=li.law_num, title=li.law_title||pickTitle(it);
+      if(!id || seen[id] || (haveIds&&haveIds[id])) continue; seen[id]=1;
+      const dt=classifyDocType(num); if(!dt) continue;
+      cand.push({id:id,num:num,title:title,docType:dt});
+    }
+  }
+  const out=[]; let n=0; const CAP=40;
+  for(const c of cand){
+    if(n>=CAP) break; n++;
+    if(onMsg) onMsg(n, Math.min(cand.length,CAP), c.title||"");
+    let d; try{ d=await apiLawData(c.id); }catch(e){ continue; }
+    const ft=d.law_full_text;
+    if(!isEnactedUnder(enactHeadText(ft), parentTitle, parentNum)) continue;
+    out.push({title:c.title, id:c.id, docType:c.docType, arts:treeToArticles(ft)});
   }
   return out;
 }
@@ -432,31 +551,44 @@ async function run(){
     if(!law||!law.id){ setStatus("「"+esc(q)+"」に一致する法令が見つかりませんでした。名称を確認してください。",true); go.disabled=false; return; }
 
     setStatus('<span class="spin"></span>'+esc(law.title)+' の本文を取得中…');
-    const parentArts=await loadArticles(law.id);
+    const pd=await apiLawData(law.id);
+    const parentArts=treeToArticles(pd.law_full_text);
+    let parentNum = pd.law_num || law.num || "";
+    if(!parentNum){ const ln=findFirst(pd.law_full_text,"LawNum"); parentNum = ln?textOf(ln):""; }
 
     setStatus('<span class="spin"></span>施行令・施行規則を探索中…');
     const reiName=document.getElementById("rei").value.trim();
     const kisokuName=document.getElementById("kisoku").value.trim();
     let children=[];
     if(reiName||kisokuName){
-      if(reiName){ const l=await findLaw(reiName); if(l&&l.id) children.push({title:l.title,id:l.id,docType:"政令"}); }
-      if(kisokuName){ const l=await findLaw(kisokuName); if(l&&l.id) children.push({title:l.title,id:l.id,docType:"省令"}); }
+      if(reiName){ const l=await findLaw(reiName); if(l&&l.id) children.push({title:l.title,id:l.id,docType:classifyDocType(l.num)||"政令"}); }
+      if(kisokuName){ const l=await findLaw(kisokuName); if(l&&l.id) children.push({title:l.title,id:l.id,docType:classifyDocType(l.num)||"省令"}); }
     } else {
       children=await discoverChildren(law.title);
     }
 
-    const childArticles=[]; const loaded=[];
+    const childArticles=[]; const loaded=[]; const haveIds={};
     for(const c of children){
+      if(c.id) haveIds[c.id]=1;
       setStatus('<span class="spin"></span>'+esc(c.title)+' を取得中…');
       try{
         const arts=await loadArticles(c.id);
-        arts.forEach(a=>childArticles.push({law:c.title,docType:c.docType,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body)}));
+        arts.forEach(a=>childArticles.push({law:c.title,docType:c.docType,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
         loaded.push(c.title);
       }catch(e){}
     }
 
+    if(document.getElementById("deep").checked){
+      const deep=await deepDiscover(law.title, parentNum, haveIds,
+        (i,tot,t)=>setStatus('<span class="spin"></span>徹底探索：制定文を確認中… ('+i+'/'+tot+') '+esc(t)));
+      for(const r of deep){
+        r.arts.forEach(a=>childArticles.push({law:r.title,docType:r.docType,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
+        loaded.push(r.title);
+      }
+    }
+
     analyzeCore(parentArts, childArticles, law.title);
-    const cnt=loaded.length ? ("受け皿: "+loaded.join("、")) : "受け皿となる施行令・施行規則が自動発見できませんでした（「詳細」から手動指定できます）。";
+    const cnt=loaded.length ? ("受け皿: "+loaded.join("、")) : "受け皿となる政省令が自動発見できませんでした（「詳細」から手動指定、または「徹底探索」をお試しください）。";
     setStatus("完了。"+esc(cnt)+"　※最終確認はe-Govの原文で。");
   }catch(err){
     setStatus("取得できませんでした（"+esc(err.message||err)+"）。ブラウザ／ネットワークが e-Gov への直接アクセスを遮断している可能性があります。このファイルをダウンロードしてブラウザで開くか、下部の「テキストを貼り付けて解析」をお使いください。",true);
