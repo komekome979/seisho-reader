@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>政省令リーダー（オンライン版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F8; --panel:#FFFFFF; --ink:#1B2530; --ink-soft:#54606D;
+    --line:#E2E7ED; --line-strong:#CDD5DE;
+    --ai:#294C7C; --ai-deep:#1E3A63; --ai-tint:#EAF0F8;
+    --ok:#0E7A6B; --ok-tint:#E4F3F0; --ok-line:#B7DED6;
+    --warn:#A9640A; --warn-tint:#FAF0DC; --warn-line:#EAD3A3;
+    --none:#6B7684; --none-tint:#EDF0F3; --none-line:#D6DBE1;
+    --sans:'Zen Kaku Gothic New','Hiragino Sans','Yu Gothic UI',system-ui,sans-serif;
+    --serif:'Shippori Mincho B1','Hiragino Mincho ProN','Yu Mincho',serif;
+    --mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.7; -webkit-font-smoothing:antialiased; font-size:15px}
+  .wrap{max-width:1120px; margin:0 auto; padding:26px 20px 80px}
+
+  header.mast{border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:18px}
+  .mast .kicker{font-size:11px; letter-spacing:.28em; color:var(--ai); font-weight:700}
+  .mast h1{font-family:var(--serif); font-weight:700; font-size:29px; letter-spacing:.02em; margin:6px 0 4px}
+  .mast p.sub{margin:0; color:var(--ink-soft); font-size:13.5px; max-width:72ch}
+  .src{margin-top:8px; font-size:11.5px; color:var(--none); font-family:var(--mono)}
+  .src a{color:var(--ai); text-decoration:none; border-bottom:1px dotted var(--ai)}
+
+  .note{background:var(--ai-tint); border:1px solid #cddcf0; border-radius:10px; padding:10px 14px; font-size:12.5px; color:var(--ai-deep); margin:14px 0 4px}
+  .note b{font-weight:700}
+
+  .fetchbar{display:flex; gap:10px; flex-wrap:wrap; align-items:stretch; margin:18px 0 6px}
+  .qwrap{flex:1 1 340px; display:flex; flex-direction:column; gap:5px}
+  .qwrap label{font-size:11.5px; font-weight:700; color:var(--ink-soft); letter-spacing:.05em}
+  #q{width:100%; height:46px; border:1px solid var(--line-strong); border-radius:10px; padding:0 14px;
+     font-family:var(--serif); font-size:16px; color:var(--ink); outline:none; background:var(--panel)}
+  #q:focus{border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint)}
+  button.btn{font-family:var(--sans); font-size:14px; font-weight:700; border-radius:10px; padding:0 22px; cursor:pointer; border:1px solid transparent; height:46px; align-self:flex-end}
+  .btn.primary{background:var(--ai); color:#fff} .btn.primary:hover{background:var(--ai-deep)}
+  .btn.primary:disabled{opacity:.5; cursor:default}
+  .btn.ghost{background:transparent; color:var(--ai); border-color:var(--line-strong); height:38px; padding:0 14px; font-size:13px}
+  .btn.ghost:hover{border-color:var(--ai); background:var(--ai-tint)}
+  .examples{font-size:12px; color:var(--none); margin:4px 2px 0}
+  .examples b{color:var(--ai); cursor:pointer; font-weight:600; border-bottom:1px dotted var(--ai)}
+
+  details.adv{margin:10px 0 0}
+  details.adv summary{font-size:12.5px; color:var(--ai); cursor:pointer; user-select:none}
+  .adv .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px}
+  .adv .row input{flex:1 1 240px; height:38px; border:1px solid var(--line-strong); border-radius:8px; padding:0 12px; font-family:var(--serif); font-size:14px; background:var(--panel)}
+
+  .status{min-height:22px; margin:12px 2px 0; font-size:13px; color:var(--ink-soft)}
+  .status.err{color:#9a2c2c}
+  .status .spin{display:inline-block; width:13px; height:13px; border:2px solid var(--ai-tint); border-top-color:var(--ai); border-radius:50%; margin-right:7px; vertical-align:-2px; animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .toolrow{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:12px}
+  .toggle{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-soft); cursor:pointer; user-select:none}
+  .toggle input{width:15px; height:15px; accent-color:var(--ai)}
+
+  .summary{display:none; align-items:center; gap:18px; flex-wrap:wrap; margin:20px 0 8px; padding:13px 16px; background:var(--panel); border:1px solid var(--line); border-radius:11px}
+  .summary.show{display:flex}
+  .tot{font-family:var(--serif); font-size:14px; color:var(--ink-soft)} .tot b{font-size:20px; color:var(--ink); font-family:var(--sans); margin-right:3px}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; margin-left:auto}
+  .lg{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft)}
+  .dot{width:11px; height:11px; border-radius:3px; display:inline-block}
+  .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.none{background:var(--none)}
+  .lg .n{font-weight:700; color:var(--ink); font-family:var(--mono)}
+
+  .reader{margin-top:6px}
+  .lawhead{font-family:var(--serif); font-weight:700; font-size:16px; color:var(--ai-deep); border-left:4px solid var(--ai); padding:2px 0 2px 12px; margin:18px 0 12px}
+  article.art{background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:15px 18px; margin:10px 0}
+  .art .cap{font-family:var(--sans); font-size:12px; font-weight:700; color:var(--ai); letter-spacing:.04em}
+  .art .body{font-family:var(--serif); font-size:15.5px; line-height:1.95; margin-top:3px; white-space:pre-wrap; word-break:normal}
+  body.tidy .art .body{line-height:2.1}
+  .art .num{font-family:var(--serif); font-weight:700; font-size:15px; margin-right:.5em}
+
+  .dl{font-family:var(--serif); font-size:1em; cursor:pointer; border:none; padding:0 .12em; border-radius:4px; border-bottom:2px solid; background:transparent; line-height:inherit; color:inherit}
+  .dl:focus-visible{outline:2px solid var(--ai); outline-offset:2px}
+  .dl.ok{color:var(--ok); border-color:var(--ok-line); background:var(--ok-tint)} .dl.ok:hover{background:#d5ece7}
+  .dl.warn{color:var(--warn); border-color:var(--warn-line); background:var(--warn-tint)} .dl.warn:hover{background:#f4e6c9}
+  .dl.none{color:var(--none); border-color:var(--none-line); background:var(--none-tint); border-bottom-style:dashed} .dl.none:hover{background:#e3e7ec}
+  .dl .tag{font-family:var(--mono); font-size:.62em; vertical-align:.28em; margin-left:.15em; font-weight:700; opacity:.85}
+
+  .exp{margin-top:11px; border-radius:9px; overflow:hidden; border:1px solid var(--line)}
+  .exp[hidden]{display:none}
+  .exp .exhd{font-family:var(--sans); font-size:11.5px; font-weight:700; letter-spacing:.04em; padding:7px 12px; display:flex; align-items:center; gap:8px}
+  .exp.ok .exhd{background:var(--ok-tint); color:var(--ok)} .exp.warn .exhd{background:var(--warn-tint); color:var(--warn)} .exp.none .exhd{background:var(--none-tint); color:var(--none)}
+  .target{padding:11px 14px; background:#fff; border-top:1px solid var(--line)}
+  .target + .target{border-top:1px dashed var(--line)}
+  .target .tnum{font-family:var(--serif); font-weight:700; font-size:14px; color:var(--ai-deep)}
+  .target .tlaw{font-family:var(--sans); font-size:11px; color:var(--none); margin-left:8px}
+  .target .tcap{font-family:var(--sans); font-size:11.5px; color:var(--ai); font-weight:700; margin-left:8px}
+  .target .tbody{font-family:var(--serif); font-size:14.5px; line-height:1.9; margin-top:4px; white-space:pre-wrap}
+  .cite{font-family:var(--mono); font-size:11px; background:#fff; border:1px solid currentColor; padding:1px 6px; border-radius:20px; opacity:.9}
+  .reason{padding:11px 14px; background:#fff; font-size:13px; color:var(--ink-soft); line-height:1.75}
+  .reason .why{color:var(--ink); font-weight:600}
+  .empty{color:var(--none); font-family:var(--sans); text-align:center; padding:40px 0; font-size:13.5px}
+
+  details.paste{margin-top:26px; border-top:1px solid var(--line); padding-top:14px}
+  details.paste summary{font-size:13px; font-weight:700; color:var(--ai); cursor:pointer; user-select:none}
+  .paste .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+  @media (max-width:760px){ .paste .grid{grid-template-columns:1fr} body{font-size:14.5px} .btn{padding:0 16px} }
+  .paste textarea{width:100%; height:170px; resize:vertical; background:var(--panel); border:1px solid var(--line-strong); border-radius:10px; padding:11px 12px; font-family:var(--serif); font-size:14px; line-height:1.8; color:var(--ink); outline:none}
+  .paste textarea:focus{border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint)}
+  .paste .flabel{font-size:11.5px; font-weight:700; color:var(--ink-soft); margin:0 0 5px}
+
+  footer.foot{margin-top:32px; padding-top:14px; border-top:1px solid var(--line); font-size:11.5px; color:var(--none); line-height:1.7}
+  footer.foot b{color:var(--ink-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="kicker">委任先リーダー・オンライン版</div>
+    <h1>政省令リーダー</h1>
+    <p class="sub">法令名を入れると、e-Gov法令APIから本文・施行令・施行規則を取得し、「政令で定める」「省令で定める」をクリックで受け皿条文に飛べる形にします。子法令側の「法第◯条…の規定により」という根拠条項で紐付け、確定／要確認／未整備の3段階で表示します。</p>
+    <div class="src">出典: <a href="https://laws.e-gov.go.jp/" target="_blank" rel="noopener">e-Gov法令検索</a>（デジタル庁・政府標準利用規約2.0）。最終確認は必ずe-Govの原文で。</div>
+  </header>
+
+  <div class="note"><b>使い方。</b>このページは e-Gov から直接データを取得します。<b>ダウンロードしてブラウザで開く</b>（またはご自身のサーバー・GitHub Pages等に置く）と確実に動きます。プレビュー画面内では外部アクセスが遮断され取得できないことがあるため、その場合は下部の「テキストを貼り付けて解析」をお使いください。</div>
+
+  <div class="fetchbar">
+    <div class="qwrap">
+      <label for="q">法令名 または 法令ID</label>
+      <input id="q" type="text" placeholder="例：大気汚染防止法" autocomplete="off">
+    </div>
+    <button class="btn primary" id="go">取得して解析</button>
+  </div>
+  <div class="examples">例：<b data-ex="大気汚染防止法">大気汚染防止法</b>／<b data-ex="宅地建物取引業法">宅地建物取引業法</b>／<b data-ex="水質汚濁防止法">水質汚濁防止法</b>／<b data-ex="343AC0000000097">法令ID直接指定</b></div>
+
+  <details class="adv">
+    <summary>受け皿の政省令を手動で指定する（自動発見に失敗するとき）</summary>
+    <div class="row">
+      <input id="rei" type="text" placeholder="施行令の名称（例：大気汚染防止法施行令）">
+      <input id="kisoku" type="text" placeholder="施行規則の名称（例：大気汚染防止法施行規則）">
+    </div>
+  </details>
+
+  <div class="status" id="status"></div>
+
+  <div class="toolrow">
+    <label class="toggle"><input type="checkbox" id="tidy"> 読みやすく整える（算用数字・句点改行）</label>
+  </div>
+
+  <div class="summary" id="summary">
+    <span class="tot"><b id="t-total">0</b>件の委任表現</span>
+    <div class="legend">
+      <span class="lg"><span class="dot ok"></span>確定 <span class="n" id="t-ok">0</span></span>
+      <span class="lg"><span class="dot warn"></span>要確認 <span class="n" id="t-warn">0</span></span>
+      <span class="lg"><span class="dot none"></span>未整備 <span class="n" id="t-none">0</span></span>
+    </div>
+  </div>
+
+  <div class="reader" id="reader">
+    <div class="empty">法令名を入れて「取得して解析」を押してください。</div>
+  </div>
+
+  <details class="paste">
+    <summary>テキストを貼り付けて解析（オフライン・取得できないとき）</summary>
+    <div class="grid">
+      <div><div class="flabel">親法令の本文（「◯◯で定める」が出てくる側）</div>
+        <textarea id="pParent" placeholder="e-Govの条文をコピーして貼り付け"></textarea></div>
+      <div><div class="flabel">政省令の本文（施行令・施行規則。法令名の行で区切ると出所が出ます）</div>
+        <textarea id="pChild" placeholder="施行令・施行規則の条文を貼り付け"></textarea></div>
+    </div>
+    <div class="toolrow" style="margin-top:10px">
+      <button class="btn ghost" id="pRun">貼り付けを解析</button>
+      <button class="btn ghost" id="pSample">サンプルを読み込む</button>
+    </div>
+  </details>
+
+  <footer class="foot">
+    <b>仕組みと限界。</b>委任表現と子側の根拠条項を機械的に突き合わせる補助ツールで、法的判断ではありません。政令委任は施行令、省令委任は施行規則と種別を照合し、条・項レベルで紐付けます。包括委任（「その他必要な事項は政令で定める」等）や前項参照の連鎖は一意に定まらないため「要確認」、対応条文が見つからないものは「未整備」（委任先未制定＝休眠委任の可能性を含む）と表示します。号レベルの厳密特定までは行わないため、同一条項に複数の受け皿がある場合は候補を併記します。結果は必ずe-Gov等の原文で確認してください。
+  </footer>
+</div>
+
+<script>
+"use strict";
+const API = "https://laws.e-gov.go.jp/api/2";
+
+/* ---------- 漢数字 ---------- */
+function kanjiToInt(s){
+  if(s==null) return null; s=String(s).trim(); if(s==="") return null;
+  if(/^[0-9]+$/.test(s)) return parseInt(s,10);
+  const d={"〇":0,"零":0,"一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9};
+  const u={"十":10,"百":100,"千":1000};
+  let total=0,cur=0,num=0,seen=false;
+  for(const ch of s){ if(ch in d){num=d[ch];seen=true;} else if(ch in u){cur+=(num||1)*u[ch];num=0;seen=true;} }
+  return seen?(cur+num):null;
+}
+function intToKanji(n){
+  if(n==null) return ""; if(n===0) return "〇";
+  const d=["","一","二","三","四","五","六","七","八","九"], su=["","十","百","千"];
+  let out="", s=String(n), len=s.length;
+  for(let i=0;i<len;i++){ const dg=+s[i], pos=len-1-i; if(dg===0) continue;
+    if(dg===1&&pos>0&&pos<=3) out+=su[pos]; else out+=d[dg]+(pos<=3?su[pos]:""); }
+  return out;
+}
+
+/* ---------- 正規表現・判定 ---------- */
+const NUM="〇零一二三四五六七八九十百千0-9";
+const DELEG_RE=new RegExp("(政令|内閣府令|[一-龥]{0,6}省令|最高裁判所規則|会計検査院規則|人事院規則|[一-龥]{0,5}規則)で定める(?:ところ(?:により|による)?)?","g");
+const CITE_RE=new RegExp("(法|令|規則|附則|本法)?第(["+NUM+"]+)条(?:の(["+NUM+"]+))?(?:第(["+NUM+"]+)項)?(?:第(["+NUM+"]+)号)?","g");
+const ART_RE=new RegExp("(?:（([^）\\n]{1,44})）\\s*)?第(["+NUM+"]+)条(?:の(["+NUM+"]+))?","g");
+const PARA_RE=/^([0-9０-９]+)(?=[^0-9０-９])/gm;
+
+function targetType(s){ if(s.includes("政令"))return"政令"; if(s.includes("内閣府令"))return"内閣府令"; if(s.includes("省令"))return"省令"; if(s.includes("規則"))return"規則"; return"政省令"; }
+function typeOk(dt,doc){ if(doc==="政令")return dt==="政令"; if(doc==="省令"||doc==="府令"||doc==="規則")return dt==="省令"||dt==="内閣府令"||dt==="規則"; return true; }
+function sentenceAround(body,idx){ let a=body.lastIndexOf("。",idx); a=a<0?0:a+1; let b=body.indexOf("。",idx); b=b<0?body.length:b+1; return body.slice(a,b); }
+function isBlanket(s){
+  return /その他[^。]{0,24}(必要な事項|細目|事項)/.test(s)
+    || /(この(法律|章|節|款|目|条|政令|省令|府令|規則|条例))(に定めるもののほか|の(?:規定の)?実施(?:のため)?)/.test(s)
+    || /(前各?(?:条|項|号)|前[〇零一二三四五六七八九十]+条)[^。]{0,20}(のほか|に定めるもののほか)/.test(s)
+    || /必要な(事項|細目)は[^。]{0,10}(政令|省令|府令|規則)で定める/.test(s);
+}
+function extractCitations(body){
+  const out=[]; let m; CITE_RE.lastIndex=0;
+  while((m=CITE_RE.exec(body))!==null){
+    out.push({ref:m[1]||"",art:kanjiToInt(m[2]),branch:m[3]?kanjiToInt(m[3]):null,para:m[4]?kanjiToInt(m[4]):null,item:m[5]?kanjiToInt(m[5]):null,text:m[0]});
+  }
+  return out;
+}
+function paraAt(body,idx){
+  let para=1,m; PARA_RE.lastIndex=0;
+  while((m=PARA_RE.exec(body))!==null){
+    if(m.index<=idx){ para=parseInt(m[1].replace(/[０-９]/g,c=>"０１２３４５６７８９".indexOf(c)),10); } else break;
+  }
+  return para;
+}
+
+/* ---------- 法令XML(JSON)ツリー → 条配列 ---------- */
+function findAll(node,tag,acc){ acc=acc||[];
+  if(Array.isArray(node)){ node.forEach(n=>findAll(n,tag,acc)); }
+  else if(node&&typeof node==="object"){ if(node.tag===tag) acc.push(node); if(node.children) node.children.forEach(c=>findAll(c,tag,acc)); }
+  return acc;
+}
+function findFirst(node,tag){
+  if(Array.isArray(node)){ for(const n of node){ const r=findFirst(n,tag); if(r) return r; } }
+  else if(node&&typeof node==="object"){ if(node.tag===tag) return node; if(node.children){ for(const c of node.children){ const r=findFirst(c,tag); if(r) return r; } } }
+  return null;
+}
+function textOf(node){
+  if(node==null) return ""; if(typeof node==="string") return node;
+  if(Array.isArray(node)) return node.map(textOf).join("");
+  if(typeof node==="object") return textOf(node.children||[]);
+  return "";
+}
+function treeToArticles(fullText){
+  const root=findFirst(fullText,"MainProvision")||fullText, arts=[];
+  for(const a of findAll(root,"Article")){
+    const numAttr=(a.attr&&a.attr.Num)||""; let num=null,branch=null;
+    if(numAttr){ const p=String(numAttr).split(/[_:\-]/); num=kanjiToInt(p[0]); if(p[1]!=null) branch=kanjiToInt(p[1]); }
+    let caption="",title="",paras=[];
+    for(const ch of (a.children||[])){
+      if(!ch||typeof ch!=="object") continue;
+      if(ch.tag==="ArticleCaption") caption=textOf(ch).replace(/^[（(]/,"").replace(/[）)]$/,"");
+      else if(ch.tag==="ArticleTitle") title=textOf(ch).trim();
+      else if(ch.tag==="Paragraph") paras.push(textOf(ch));
+    }
+    if(num==null&&title){ const mm=title.match(new RegExp("第(["+NUM+"]+)条(?:の(["+NUM+"]+))?")); if(mm){ num=kanjiToInt(mm[1]); if(mm[2]) branch=kanjiToInt(mm[2]); } }
+    const numText = title || ("第"+(num!=null?intToKanji(num):"")+"条"+(branch!=null?"の"+intToKanji(branch):""));
+    arts.push({num,branch,numText,caption,body:paras.join("\n").trim()});
+  }
+  return arts;
+}
+
+/* ---------- テキスト → 条配列（貼り付けモード） ---------- */
+function splitArticles(text){
+  const found=[]; let m; ART_RE.lastIndex=0;
+  while((m=ART_RE.exec(text))!==null){ found.push({caption:m[1]||"",numRaw:m[2],branchRaw:m[3]||"",start:m.index,headEnd:ART_RE.lastIndex}); }
+  const arts=[];
+  for(let i=0;i<found.length;i++){
+    const f=found[i], s=f.headEnd, e=(i+1<found.length)?found[i+1].start:text.length;
+    arts.push({num:kanjiToInt(f.numRaw),branch:f.branchRaw?kanjiToInt(f.branchRaw):null,
+      numText:"第"+f.numRaw+"条"+(f.branchRaw?"の"+f.branchRaw:""),caption:f.caption,body:text.slice(s,e).trim()});
+  }
+  return arts;
+}
+function splitChildSegments(text){
+  const lines=text.split(/\n/), segs=[]; let cur={law:"政省令等",buf:[]};
+  const headRe=/(施行令|施行規則|施行細則|省令|府令|規則|政令)\s*$/;
+  for(const ln of lines){
+    const t=ln.trim();
+    const isHead = t.length>0 && t.length<=40 && !new RegExp("第["+NUM+"]+条").test(t) && (headRe.test(t) || /法.*(施行令|施行規則)/.test(t));
+    if(isHead){ if(cur.buf.join("").trim()!=="") segs.push(cur); cur={law:t,buf:[]}; }
+    else cur.buf.push(ln);
+  }
+  if(cur.buf.join("").trim()!=="") segs.push(cur);
+  if(segs.length===0) segs.push({law:"政省令等",buf:[text]});
+  return segs.map(s=>{
+    const law=s.law; let doc="";
+    if(/施行令|政令/.test(law)) doc="政令"; else if(/施行規則|規則|省令|府令/.test(law)) doc="省令";
+    const arts=splitArticles(s.buf.join("\n")).map(a=>({law,docType:doc,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body)}));
+    return arts;
+  }).flat();
+}
+
+/* ---------- 解析コア ---------- */
+let MATCHDATA={};
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function analyzeCore(parentArts, childArticles, lawTitle){
+  MATCHDATA={};
+  const reader=document.getElementById("reader");
+  if(!parentArts.length){ reader.innerHTML='<div class="empty">条文が取得・抽出できませんでした。</div>'; document.getElementById("summary").classList.remove("show"); return; }
+  let counts={ok:0,warn:0,none:0}, html="", key=0;
+  if(lawTitle) html+='<div class="lawhead">'+esc(lawTitle)+'</div>';
+
+  for(const art of parentArts){
+    const body=art.body||""; const dels=[]; let m; DELEG_RE.lastIndex=0;
+    while((m=DELEG_RE.exec(body))!==null){ dels.push({start:m.index,end:DELEG_RE.lastIndex,text:m[0]}); }
+    let bodyHtml="", cursor=0;
+    for(const d of dels){
+      bodyHtml+=esc(body.slice(cursor,d.start));
+      const p=paraAt(body,d.start), tt=targetType(d.text), blanket=isBlanket(sentenceAround(body,d.start));
+      let targets=[];
+      for(const ca of childArticles){
+        if(!typeOk(tt,ca.docType||"")) continue;
+        let hit=null,loose=null;
+        for(const c of ca.cites){
+          if((c.ref===""||c.ref==="法"||c.ref==="本法") && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
+            if(c.para===p) hit=c; else if(c.para==null && !loose) loose=c;
+          }
+        }
+        const use=hit||loose;
+        if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!hit});
+      }
+      if(targets.some(t=>t.exact)) targets=targets.filter(t=>t.exact);
+      const status = targets.length ? "ok" : (blanket?"warn":"none");
+      counts[status]++;
+      const k="k"+(key++);
+      MATCHDATA[k]={status,tt,para:p,artNum:art.numText,matches:targets};
+      const tag = status==="ok" ? (targets.length>1?targets.length+"件":"確定") : (status==="warn"?"要確認":"未整備");
+      bodyHtml+='<button class="dl '+status+'" data-k="'+k+'">'+esc(d.text)+'<span class="tag">▸'+tag+'</span></button>';
+      cursor=d.end;
+    }
+    bodyHtml+=esc(body.slice(cursor));
+    html+='<article class="art">';
+    if(art.caption) html+='<div class="cap">（'+esc(art.caption)+'）</div>';
+    html+='<div class="body"><span class="num" data-arabic="第'+(art.num!=null?art.num:"")+'条'+(art.branch!=null?"の"+art.branch:"")+'">'+esc(art.numText)+'</span>'+bodyHtml+'</div>';
+    html+='<div class="expandhost"></div></article>';
+  }
+  reader.innerHTML=html || '<div class="empty">条文が見つかりませんでした。</div>';
+  const total=counts.ok+counts.warn+counts.none;
+  document.getElementById("t-total").textContent=total;
+  document.getElementById("t-ok").textContent=counts.ok;
+  document.getElementById("t-warn").textContent=counts.warn;
+  document.getElementById("t-none").textContent=counts.none;
+  document.getElementById("summary").classList.toggle("show",total>0);
+  applyTidy();
+}
+
+/* ---------- 展開 ---------- */
+document.getElementById("reader").addEventListener("click",function(e){
+  const btn=e.target.closest(".dl"); if(!btn) return;
+  const k=btn.getAttribute("data-k"), data=MATCHDATA[k]; if(!data) return;
+  const art=btn.closest("article.art"), host=art.querySelector(".expandhost");
+  const existing=host.querySelector('[data-for="'+k+'"]'); if(existing){ existing.remove(); return; }
+  const box=document.createElement("div"); box.className="exp "+data.status; box.setAttribute("data-for",k);
+  const label = data.status==="ok"?"確定：受け皿の条文":(data.status==="warn"?"要確認：構造的に絞れない委任":"未整備：対応条文が見当たりません");
+  let inner='<div class="exhd">'+label+'<span style="margin-left:auto;font-family:var(--mono);font-weight:400;opacity:.75">'+esc(data.artNum)+'第'+data.para+'項の「'+esc(data.tt)+'」委任</span></div>';
+  if(data.status==="ok"){
+    for(const t of data.matches){
+      inner+='<div class="target"><span class="tnum">'+esc(t.numText)+'</span><span class="tlaw">'+esc(t.law)+'</span>';
+      if(t.caption) inner+='<span class="tcap">（'+esc(t.caption)+'）</span>';
+      if(t.cite) inner+=' <span class="cite">根拠：'+esc(t.cite)+'</span>';
+      inner+='<div class="tbody">'+esc(t.body)+'</div></div>';
+    }
+  } else if(data.status==="warn"){
+    inner+='<div class="reason"><span class="why">絞り切れない理由：</span>包括委任（「その他…必要な事項は…で定める」型）または前項・前条参照の連鎖にあたり、受け皿が複数条項に及ぶため一意に特定できません。該当する政省令の全体を原文で確認してください。</div>';
+  } else {
+    inner+='<div class="reason"><span class="why">候補なし：</span>取得した政省令の中に「'+esc(data.artNum)+'…の規定により」と引用する条文が見つかりませんでした。委任先が未制定（休眠委任）、または該当省令が別法令にある可能性があります。</div>';
+  }
+  box.innerHTML=inner; host.appendChild(box); box.scrollIntoView({behavior:"smooth",block:"nearest"});
+});
+
+/* ---------- 読みやすく整える ---------- */
+function applyTidy(){
+  const tidy=document.getElementById("tidy").checked;
+  document.body.classList.toggle("tidy",tidy);
+  document.querySelectorAll(".num").forEach(el=>{ if(!el.dataset.kanji) el.dataset.kanji=el.textContent; el.textContent= tidy?el.dataset.arabic:el.dataset.kanji; });
+  document.querySelectorAll(".art .body, .target .tbody").forEach(el=>{ if(!el.dataset.orig) el.dataset.orig=el.innerHTML; el.innerHTML= tidy? el.dataset.orig.replace(/。(?!\n|<)/g,"。\n") : el.dataset.orig; });
+}
+document.getElementById("tidy").addEventListener("change",applyTidy);
+
+/* ---------- e-Gov API 取得 ---------- */
+function setStatus(msg,isErr){ const s=document.getElementById("status"); s.className="status"+(isErr?" err":""); s.innerHTML=msg; }
+async function apiLaws(title){
+  const r=await fetch(API+"/laws?law_title="+encodeURIComponent(title)+"&limit=5&response_format=json");
+  if(!r.ok) throw new Error("laws API "+r.status); return r.json();
+}
+async function apiLawData(id){
+  const r=await fetch(API+"/law_data/"+encodeURIComponent(id)+"?response_format=json&law_full_text_format=json");
+  if(!r.ok) throw new Error("law_data API "+r.status); return r.json();
+}
+function pickTitle(l){ return ((l.revision_info||l.current_revision_info||{}).law_title)||""; }
+function pickId(l){ return (l.law_info||{}).law_id; }
+async function findLaw(q){
+  if(/^[0-9A-Za-z]{10,}$/.test(q)) return {id:q,title:q};
+  const d=await apiLaws(q); const laws=(d&&d.laws)||[];
+  if(!laws.length) return null;
+  let hit=laws.find(l=>pickTitle(l)===q)||laws[0];
+  return {id:pickId(hit),title:pickTitle(hit)||q};
+}
+async function discoverChildren(title){
+  const out=[];
+  for(const suf of ["施行令","施行規則"]){
+    try{
+      const d=await apiLaws(title+suf); const laws=(d&&d.laws)||[];
+      const l=laws.find(x=>pickTitle(x).includes(suf));
+      if(l) out.push({title:pickTitle(l),id:pickId(l),docType: suf==="施行令"?"政令":"省令"});
+    }catch(e){}
+  }
+  return out;
+}
+async function loadArticles(id){ const d=await apiLawData(id); return treeToArticles(d.law_full_text); }
+
+async function run(){
+  const q=document.getElementById("q").value.trim();
+  if(!q){ setStatus("法令名または法令IDを入力してください。",true); return; }
+  const go=document.getElementById("go"); go.disabled=true;
+  document.getElementById("reader").innerHTML='<div class="empty">取得中…</div>';
+  document.getElementById("summary").classList.remove("show");
+  try{
+    setStatus('<span class="spin"></span>法令を検索中…');
+    const law=await findLaw(q);
+    if(!law||!law.id){ setStatus("「"+esc(q)+"」に一致する法令が見つかりませんでした。名称を確認してください。",true); go.disabled=false; return; }
+
+    setStatus('<span class="spin"></span>'+esc(law.title)+' の本文を取得中…');
+    const parentArts=await loadArticles(law.id);
+
+    setStatus('<span class="spin"></span>施行令・施行規則を探索中…');
+    const reiName=document.getElementById("rei").value.trim();
+    const kisokuName=document.getElementById("kisoku").value.trim();
+    let children=[];
+    if(reiName||kisokuName){
+      if(reiName){ const l=await findLaw(reiName); if(l&&l.id) children.push({title:l.title,id:l.id,docType:"政令"}); }
+      if(kisokuName){ const l=await findLaw(kisokuName); if(l&&l.id) children.push({title:l.title,id:l.id,docType:"省令"}); }
+    } else {
+      children=await discoverChildren(law.title);
+    }
+
+    const childArticles=[]; const loaded=[];
+    for(const c of children){
+      setStatus('<span class="spin"></span>'+esc(c.title)+' を取得中…');
+      try{
+        const arts=await loadArticles(c.id);
+        arts.forEach(a=>childArticles.push({law:c.title,docType:c.docType,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body)}));
+        loaded.push(c.title);
+      }catch(e){}
+    }
+
+    analyzeCore(parentArts, childArticles, law.title);
+    const cnt=loaded.length ? ("受け皿: "+loaded.join("、")) : "受け皿となる施行令・施行規則が自動発見できませんでした（「詳細」から手動指定できます）。";
+    setStatus("完了。"+esc(cnt)+"　※最終確認はe-Govの原文で。");
+  }catch(err){
+    setStatus("取得できませんでした（"+esc(err.message||err)+"）。ブラウザ／ネットワークが e-Gov への直接アクセスを遮断している可能性があります。このファイルをダウンロードしてブラウザで開くか、下部の「テキストを貼り付けて解析」をお使いください。",true);
+    document.getElementById("reader").innerHTML='<div class="empty">取得に失敗しました。</div>';
+  }finally{
+    go.disabled=false;
+  }
+}
+document.getElementById("go").addEventListener("click",run);
+document.getElementById("q").addEventListener("keydown",e=>{ if(e.key==="Enter") run(); });
+document.querySelectorAll(".examples b").forEach(b=>b.addEventListener("click",()=>{ document.getElementById("q").value=b.getAttribute("data-ex"); run(); }));
+
+/* ---------- 貼り付けモード ---------- */
+function runPaste(){
+  const parentText=document.getElementById("pParent").value;
+  const childText=document.getElementById("pChild").value;
+  if(parentText.trim()===""){ setStatus("貼り付けモード：親法令の本文が空です。",true); return; }
+  analyzeCore(splitArticles(parentText), splitChildSegments(childText), "");
+  setStatus("貼り付けたテキストを解析しました。");
+}
+document.getElementById("pRun").addEventListener("click",runPaste);
+
+const SAMPLE_PARENT=
+`（定義）
+第二条この法律において「対象事業者」とは、政令で定める規模以上の○○事業を行う者をいう。
+（届出）
+第三条対象事業者は、主務省令で定めるところにより、その事業の内容を届け出なければならない。
+（基準の遵守）
+第三条の二対象事業者は、政令で定める基準を遵守しなければならない。
+（雑則）
+第四条前三条に定めるもののほか、この法律の実施のため必要な事項は、政令で定める。`;
+const SAMPLE_CHILD=
+`○○法施行令
+（対象事業者の規模）
+第一条法第二条に規定する政令で定める規模は、常時使用する従業員の数が三十人以上であることとする。
+
+○○法施行規則
+（届出の手続）
+第一条法第三条の規定による届出は、別記様式による届出書を主務大臣に提出して行うものとする。`;
+document.getElementById("pSample").addEventListener("click",function(){
+  document.getElementById("pParent").value=SAMPLE_PARENT;
+  document.getElementById("pChild").value=SAMPLE_CHILD;
+  runPaste();
+});
+</script>
+</body>
+</html>
