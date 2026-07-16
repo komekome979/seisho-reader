@@ -173,8 +173,11 @@
   .lawhead{ font-size:15px }
   .art .num{ color:var(--ai-deep) }
   .topbar{ background:#14171C }
-  .lawlinks{ margin:4px 2px 8px; font-size:12px; color:var(--ink-soft) }
-  .lawlinks a{ color:var(--ai); text-decoration:none; border-bottom:1px dotted var(--ai) }
+  .lawlinks{ margin:2px 2px 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap }
+  .lawlinks .lawnum{ font-size:12px; color:var(--ink-soft) }
+  .lawlinks .histbtn{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:var(--ai-deep); background:var(--ai-tint); border:1px solid #CDDCF0; border-radius:9px; padding:5px 12px; text-decoration:none }
+  .lawlinks .histbtn:hover{ background:#DDE8F7; border-color:var(--ai) }
+  .exlabel2{ margin-left:12px }
   .kwhead{ font-size:12.5px; color:var(--ink-soft); margin:6px 2px 12px; font-weight:700 }
   .kwitem{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:8px 0; cursor:pointer; transition:border-color .12s }
   .kwitem:hover{ border-color:var(--accent) }
@@ -206,7 +209,7 @@
     <button class="btn alt" id="kwgo">テキスト検索</button>
   </div>
   <div class="searchhelp"><b>法令検索</b>＝法令名・法令ID・条番号で開く（例：会社法32 → 第32条へジャンプ）。／<b>テキスト検索</b>＝入力した語を含む条文をもつ法令を、e-Gov全体から探す（例：漏えい）。</div>
-  <div class="examples"><span class="exlabel">例</span><b data-ex="大気汚染防止法">大気汚染防止法</b><b data-ex="宅地建物取引業法">宅地建物取引業法</b><b data-ex="水質汚濁防止法">水質汚濁防止法</b><b data-ex="343AC0000000097">法令ID直接指定</b></div>
+  <div class="examples"><span class="exlabel">法令検索</span><b data-ex="大気汚染防止法">大気汚染防止法</b><b data-ex="宅地建物取引業法">宅地建物取引業法</b><b data-ex="会社法32">会社法32</b><span class="exlabel exlabel2">テキスト検索</span><b data-ex="漏えい" data-kw="1">漏えい</b></div>
 
   <div class="status" id="status"></div>
 
@@ -712,13 +715,17 @@ async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
       cand.push({id:id,num:num,title:title,docType:dt});
     }
   }
-  const out=[]; let n=0; const CAP=40;
+  const core=(parentTitle||"").replace(/(に関する法律|に関する政令|に関する省令|法律|に関する|等)$/,"").slice(0,6);
+  const score=(c)=>{ let s=0; const t=c.title||""; if(parentTitle&&t.indexOf(parentTitle)>=0) s+=4; else if(core&&t.indexOf(core)>=0) s+=3; if(/施行(令|規則|細則)/.test(t)) s+=2; if(/(内閣府令|省令|府令|規則)/.test(t)) s+=1; return s; };
+  cand.sort((a,b)=>score(b)-score(a));
+  const out=[]; let n=0; const CAP=60;
   for(const c of cand){
     if(n>=CAP) break; n++;
     if(onMsg) onMsg(n, Math.min(cand.length,CAP), c.title||"");
     let d; try{ d=await apiLawData(c.id); }catch(e){ continue; }
     const ft=d.law_full_text;
-    if(!isEnactedUnder(enactHeadText(ft), parentTitle, parentNum)) continue;
+    const strong = score(c)>=4;
+    if(!strong && !isEnactedUnder(enactHeadText(ft), parentTitle, parentNum)) continue;
     out.push({title:c.title, id:c.id, docType:c.docType, arts:treeToArticles(ft)});
   }
   return out;
@@ -785,7 +792,7 @@ async function run(){
     }
 
     analyzeCore(parentArts, childArticles, law.title);
-    let llhtml = (parentNum?esc(parentNum)+"\u3000":"")+'<a href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(law.id)+'" target="_blank" rel="noopener">e-Govで沿革・改正履歴を見る \u2197</a>';
+    let llhtml = (parentNum?'<span class="lawnum">'+esc(parentNum)+'</span>':"")+'<a class="histbtn" href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(law.id)+'" target="_blank" rel="noopener">改正履歴・沿革を見る（e-Gov）\u2197</a>';
     const noneCnt=parseInt((document.getElementById("t-none")||{}).textContent||"0",10);
     document.getElementById("lawlinks").innerHTML = llhtml;
     if(parsed.art) setTimeout(function(){ jumpToArticle(parsed.art, parsed.branch); },80);
@@ -800,7 +807,7 @@ async function run(){
 }
 document.getElementById("go").addEventListener("click",run);
 document.getElementById("q").addEventListener("keydown",e=>{ if(e.key==="Enter") run(); });
-document.querySelectorAll(".examples b").forEach(b=>b.addEventListener("click",()=>{ document.getElementById("q").value=b.getAttribute("data-ex"); run(); }));
+document.querySelectorAll(".examples b").forEach(b=>b.addEventListener("click",()=>{ document.getElementById("q").value=b.getAttribute("data-ex"); if(b.getAttribute("data-kw")) runKeyword(); else run(); }));
 async function runKeyword(){
   const q=document.getElementById("q").value.trim();
   if(!q){ setStatus("検索語を入力してください。",true); return; }
