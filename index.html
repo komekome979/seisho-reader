@@ -172,6 +172,19 @@
   .filterbar .chip{ font-size:12px; padding:3px 11px }
   .lawhead{ font-size:15px }
   .art .num{ color:var(--ai-deep) }
+  .topbar{ background:#14171C }
+  .deepbox{ display:flex; align-items:flex-start; gap:10px; margin:12px 0 2px; padding:12px 16px; background:var(--accent-tint); border:1px solid var(--accent); border-radius:11px; cursor:pointer; font-size:13px; color:var(--ink); line-height:1.6 }
+  .deepbox input{ width:17px; height:17px; margin-top:2px; accent-color:var(--accent); flex:none }
+  .deepbox b{ color:#8A5A1E; font-weight:800; letter-spacing:.03em }
+  .deepbox:hover{ background:#F1E4CD }
+  .lawlinks{ margin:4px 2px 8px; font-size:12px; color:var(--ink-soft) }
+  .lawlinks a{ color:var(--ai); text-decoration:none; border-bottom:1px dotted var(--ai) }
+  .kwhead{ font-size:12.5px; color:var(--ink-soft); margin:6px 2px 12px; font-weight:700 }
+  .kwitem{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:8px 0; cursor:pointer; transition:border-color .12s }
+  .kwitem:hover{ border-color:var(--accent) }
+  .kwt{ font-family:var(--serif); font-weight:700; font-size:15px; color:var(--ai-deep) }
+  .kwn{ font-family:var(--mono); font-size:11px; color:var(--none); font-weight:400; margin-left:8px }
+  .kws{ font-family:var(--serif); font-size:12.5px; color:var(--ink-soft); line-height:1.7; margin-top:5px }
 </style>
 </head>
 <body>
@@ -180,21 +193,19 @@
 <div class="wrap">
   <header class="mast">
     <h1>政省令リーダー</h1>
-    <p class="sub">法令名を入れると、e-Gov法令APIから本文・施行令・施行規則を取得し、「政令で定める」「省令で定める」をクリックで受け皿条文に飛べる形にします。子法令側の「法第◯条…の規定により」という根拠条項で紐付け、確定／要確認／未整備の3段階で表示します。</p>
     <div class="src">出典: <a href="https://laws.e-gov.go.jp/" target="_blank" rel="noopener">e-Gov法令検索</a>（デジタル庁・政府標準利用規約2.0）。最終確認は必ずe-Govの原文で。</div>
   </header>
 
-  <div class="note"><b>使い方。</b>このページは e-Gov から直接データを取得します。<b>ダウンロードしてブラウザで開く</b>（またはご自身のサーバー・GitHub Pages等に置く）と確実に動きます。プレビュー画面内では外部アクセスが遮断され取得できないことがあるため、その場合は下部の「テキストを貼り付けて解析」をお使いください。</div>
-
   <div class="fetchbar">
     <div class="qwrap">
-      <label for="q">法令名 または 法令ID</label>
-      <input id="q" type="text" placeholder="例：大気汚染防止法" autocomplete="off">
+      <label for="q">法令名・法令ID・条番号（例：会社法／会社法32／個人情報保護法 第20条）</label>
+      <input id="q" type="text" placeholder="例：大気汚染防止法／会社法32／個人情報保護法" autocomplete="off">
     </div>
-    <button class="btn primary" id="go">取得して解析</button>
+    <button class="btn primary" id="go">開く／解析</button>
+    <button class="btn ghost" id="kwgo">全文検索</button>
   </div>
   <div class="examples"><span class="exlabel">例</span><b data-ex="大気汚染防止法">大気汚染防止法</b><b data-ex="宅地建物取引業法">宅地建物取引業法</b><b data-ex="水質汚濁防止法">水質汚濁防止法</b><b data-ex="343AC0000000097">法令ID直接指定</b></div>
-  <label class="toggle" style="margin:8px 2px 2px"><input type="checkbox" id="deep"> 徹底探索：施行令・施行規則以外の内閣府令・他省庁の府省令も、制定文をたどって探す（やや時間がかかります）</label>
+  <label class="deepbox"><input type="checkbox" id="deep"> <span><b>⚡ 徹底探索</b>　施行令・施行規則だけでなく、内閣府令・他省庁の府省令も制定文をたどって探します（やや時間がかかります）</span></label>
 
   <details class="adv">
     <summary>受け皿の政省令を手動で指定する（自動発見に失敗するとき）</summary>
@@ -236,6 +247,7 @@
       <nav class="toc" id="toc"></nav>
     </aside>
     <main class="readerwrap">
+      <div id="lawlinks" class="lawlinks"></div>
       <div class="reader" id="reader">
         <div class="empty">法令名を入れて「取得して解析」を押してください。</div>
       </div>
@@ -442,6 +454,7 @@ function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 
 function analyzeCore(parentArts, childArticles, lawTitle){
   MATCHDATA={}; LAST_TITLE=lawTitle||"";
+  const _ll0=document.getElementById("lawlinks"); if(_ll0) _ll0.innerHTML="";
   const reader=document.getElementById("reader");
   if(!parentArts.length){ reader.innerHTML='<div class="empty">条文が取得・抽出できませんでした。</div>'; document.getElementById("summary").classList.remove("show"); return; }
   let counts={ok:0,warn:0,none:0}, html="", key=0, toc=[];
@@ -719,16 +732,35 @@ async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
 }
 async function loadArticles(id){ const d=await apiLawData(id); return treeToArticles(d.law_full_text); }
 
+function parseQuery(q){
+  q=q.trim();
+  if(/^[0-9A-Za-z]{10,}$/.test(q)) return {lawQuery:q, art:null, branch:null};
+  let m=q.match(/第([〇零一二三四五六七八九十百千0-9]+)条(?:の([〇零一二三四五六七八九十百千0-9]+))?/);
+  if(m){ const lq=q.slice(0,m.index).trim(); if(lq) return {lawQuery:lq, art:kanjiToInt(m[1]), branch:m[2]?kanjiToInt(m[2]):null}; }
+  m=q.match(/^(.*?[^0-9\s　])[\s　]*(\d{1,4})(?:[のｰ\-–](\d{1,3}))?(?:[\s　]+\d{1,3})?[\s　]*$/);
+  if(m && m[1]) return {lawQuery:m[1].trim(), art:parseInt(m[2],10), branch:m[3]?parseInt(m[3],10):null};
+  return {lawQuery:q, art:null, branch:null};
+}
+function jumpToArticle(num, branch){
+  if(num==null) return false;
+  const want="第"+num+"条"+(branch!=null?"の"+branch:"");
+  for(const el of document.querySelectorAll("#reader article.art")){
+    const n=el.querySelector(".num");
+    if(n && n.getAttribute("data-arabic")===want){ el.scrollIntoView({behavior:"smooth",block:"start"}); el.classList.add("flash"); setTimeout(function(){ el.classList.remove("flash"); },1600); return true; }
+  }
+  return false;
+}
 async function run(){
   const q=document.getElementById("q").value.trim();
-  if(!q){ setStatus("法令名または法令IDを入力してください。",true); return; }
+  if(!q){ setStatus("法令名・法令ID・条番号を入力してください。",true); return; }
+  const parsed=parseQuery(q); const lawQ=parsed.lawQuery||q;
   const go=document.getElementById("go"); go.disabled=true;
   document.getElementById("reader").innerHTML='<div class="empty">取得中…</div>';
   document.getElementById("summary").classList.remove("show");
   try{
     setStatus('<span class="spin"></span>法令を検索中…');
-    const law=await findLaw(q);
-    if(!law||!law.id){ setStatus("「"+esc(q)+"」に一致する法令が見つかりませんでした。名称を確認してください。",true); go.disabled=false; return; }
+    const law=await findLaw(lawQ);
+    if(!law||!law.id){ setStatus("「"+esc(lawQ)+"」に一致する法令が見つかりませんでした。名称を確認してください。",true); go.disabled=false; return; }
 
     setStatus('<span class="spin"></span>'+esc(law.title)+' の本文を取得中…');
     const pd=await apiLawData(law.id);
@@ -768,6 +800,8 @@ async function run(){
     }
 
     analyzeCore(parentArts, childArticles, law.title);
+    document.getElementById("lawlinks").innerHTML = (parentNum?esc(parentNum)+"\u3000":"")+'<a href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(law.id)+'" target="_blank" rel="noopener">e-Govで沿革・改正履歴を見る \u2197</a>';
+    if(parsed.art) setTimeout(function(){ jumpToArticle(parsed.art, parsed.branch); },80);
     const cnt=loaded.length ? ("受け皿: "+loaded.join("、")) : "受け皿となる政省令が自動発見できませんでした（「詳細」から手動指定、または「徹底探索」をお試しください）。";
     setStatus("完了。"+esc(cnt)+"　※最終確認はe-Govの原文で。");
   }catch(err){
@@ -780,6 +814,33 @@ async function run(){
 document.getElementById("go").addEventListener("click",run);
 document.getElementById("q").addEventListener("keydown",e=>{ if(e.key==="Enter") run(); });
 document.querySelectorAll(".examples b").forEach(b=>b.addEventListener("click",()=>{ document.getElementById("q").value=b.getAttribute("data-ex"); run(); }));
+async function runKeyword(){
+  const q=document.getElementById("q").value.trim();
+  if(!q){ setStatus("検索語を入力してください。",true); return; }
+  const kw=document.getElementById("kwgo"); kw.disabled=true;
+  document.getElementById("layout").classList.remove("has-toc");
+  document.getElementById("summary").classList.remove("show");
+  document.getElementById("csv").style.display="none";
+  const _ll=document.getElementById("lawlinks"); if(_ll) _ll.innerHTML="";
+  document.getElementById("reader").innerHTML='<div class="empty">全文検索中…</div>';
+  setStatus('<span class="spin"></span>「'+esc(q)+'」を全文検索中…');
+  try{
+    const d=await apiKeyword(q, 50);
+    const items=d.items||d.laws||[];
+    if(!items.length){ document.getElementById("reader").innerHTML='<div class="empty">「'+esc(q)+'」に一致する条文は見つかりませんでした。</div>'; setStatus("該当なし。"); return; }
+    let html='<div class="kwhead">「'+esc(q)+'」の全文検索結果'+(d.total_count!=null?("（約"+d.total_count+"件ヒット・上位"+items.length+"法令）"):("（"+items.length+"法令）"))+'</div>';
+    for(const it of items){
+      const li=it.law_info||it; const title=li.law_title||pickTitle(it); const num=li.law_num||""; const id=li.law_id||"";
+      const sents=(it.sentences||[]).slice(0,2).map(function(s){return esc((s.text||"").slice(0,140));}).filter(Boolean).join(" … ");
+      html+='<div class="kwitem" data-open="'+esc(id||title)+'"><div class="kwt">'+esc(title)+'<span class="kwn">'+esc(num)+'</span></div>'+(sents?'<div class="kws">'+sents+' …</div>':"")+'</div>';
+    }
+    document.getElementById("reader").innerHTML=html;
+    setStatus("全文検索："+items.length+"法令ヒット。行をクリックすると、その法令を開いて委任先を解析します。");
+  }catch(e){ document.getElementById("reader").innerHTML='<div class="empty">検索に失敗しました。</div>'; setStatus("検索に失敗しました（"+esc(e.message||e)+"）。ダウンロードしてブラウザで開くとe-Govにアクセスできます。",true); }
+  finally{ kw.disabled=false; }
+}
+document.getElementById("kwgo").addEventListener("click",runKeyword);
+document.getElementById("reader").addEventListener("click",function(e){ const it=e.target.closest(".kwitem"); if(!it) return; document.getElementById("q").value=it.getAttribute("data-open"); run(); });
 
 
 /* ---------- ホバー・プレビュー ---------- */
