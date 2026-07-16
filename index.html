@@ -209,7 +209,7 @@
     <button class="btn alt" id="kwgo">テキスト検索</button>
   </div>
   <div class="searchhelp"><b>法令検索</b>＝法令名・法令ID・条番号で開く（例：会社法32 → 第32条へジャンプ）。／<b>テキスト検索</b>＝入力した語を含む条文をもつ法令を、e-Gov全体から探す（例：漏えい）。</div>
-  <div class="examples"><span class="exlabel">法令検索</span><b data-ex="大気汚染防止法">大気汚染防止法</b><b data-ex="宅地建物取引業法">宅地建物取引業法</b><b data-ex="会社法32">会社法32</b><span class="exlabel exlabel2">テキスト検索</span><b data-ex="漏えい" data-kw="1">漏えい</b></div>
+  <div class="examples"><span class="exlabel">法令検索</span><b data-ex="大気汚染防止法">大気汚染防止法</b><b data-ex="資金決済法">資金決済法</b><b data-ex="個人情報保護法32">個人情報保護法32</b><span class="exlabel exlabel2">テキスト検索</span><b data-ex="漏えい" data-kw="1">漏えい</b></div>
 
   <div class="status" id="status"></div>
 
@@ -685,8 +685,10 @@ function typeAllows(dt, doc){
   if(dt==="政省令") return true;
   return doc!=="政令";
 }
+const LAW_ALIAS={"個人情報保護法":"個人情報の保護に関する法律","資金決済法":"資金決済に関する法律","マイナンバー法":"行政手続における特定の個人を識別するための番号の利用等に関する法律","番号法":"行政手続における特定の個人を識別するための番号の利用等に関する法律","景表法":"不当景品類及び不当表示防止法","独禁法":"私的独占の禁止及び公正取引の確保に関する法律","下請法":"下請代金支払遅延等防止法","特商法":"特定商取引に関する法律","労基法":"労働基準法","道交法":"道路交通法","犯収法":"犯罪による収益の移転防止に関する法律","宅建業法":"宅地建物取引業法","金商法":"金融商品取引法","プロバイダ責任制限法":"特定電気通信による情報の流通によって発生する権利侵害等への対処に関する法律"};
 async function findLaw(q){
   if(/^[0-9A-Za-z]{10,}$/.test(q)) return {id:q,title:q,num:""};
+  q=LAW_ALIAS[q]||q;
   const d=await apiLaws(q); const laws=(d&&d.laws)||[];
   if(!laws.length) return null;
   let hit=laws.find(l=>pickTitle(l)===q)||laws[0];
@@ -724,8 +726,10 @@ async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
     if(onMsg) onMsg(n, Math.min(cand.length,CAP), c.title||"");
     let d; try{ d=await apiLawData(c.id); }catch(e){ continue; }
     const ft=d.law_full_text;
+    const ftStr=JSON.stringify(ft);
+    const mentions=(parentNum && ftStr.indexOf(parentNum)>=0) || (parentTitle && ftStr.indexOf(parentTitle)>=0);
     const strong = score(c)>=4;
-    if(!strong && !isEnactedUnder(enactHeadText(ft), parentTitle, parentNum)) continue;
+    if(!strong && !mentions && !isEnactedUnder(enactHeadText(ft), parentTitle, parentNum)) continue;
     out.push({title:c.title, id:c.id, docType:c.docType, arts:treeToArticles(ft)});
   }
   return out;
