@@ -360,7 +360,7 @@
 
 
   <footer class="foot">
-    <b>仕組みと限界。</b>委任表現と子側の根拠条項を機械的に突き合わせる補助ツールで、法的判断ではありません。政令委任は施行令、省令委任は施行規則と種別を照合し、条・項レベルで紐付けます。包括委任（「その他必要な事項は政令で定める」等）や前項参照の連鎖は一意に定まらないため「要確認」、対応条文が見つからないものは「未整備」（委任先未制定＝休眠委任の可能性を含む）と表示します。号レベルの厳密特定までは行わないため、同一条項に複数の受け皿がある場合は候補を併記します。結果は必ずe-Gov等の原文で確認してください。
+    <b>仕組みと限界。</b>委任表現と子側の根拠条項を機械的に突き合わせる補助ツールで、法的判断ではありません。政令委任は施行令、省令委任は施行規則と種別を照合し、条・項レベルで紐付けます。包括委任（「その他必要な事項は政令で定める」等）や前項参照の連鎖は一意に定まらないため「要確認」、対応条文が見つからないものは「未整備」（委任先未制定＝休眠委任の可能性を含む）と表示します。号は、委任と受け皿の双方に号が明示されている場合に限り照合します（双方が号まで特定できないものは同一条項の候補を併記します）。結果は必ずe-Gov等の原文で確認してください。
   </footer>
 </div>
 
@@ -492,21 +492,48 @@ function textOf(node){
   if(typeof node==="object") return textOf(node.children||[]);
   return "";
 }
+function locateDeleg(art,pos){
+  let para=1;
+  if(art.pmap){ for(const s of art.pmap){ if(pos>=s.start) para=s.para; else break; } }
+  let item=null;
+  if(art.imap){ for(const s of art.imap){ if(pos>=s.start && pos<s.end){ item=s.item; if(s.para!=null) para=s.para; break; } } }
+  return {para:para,item:item};
+}
 function treeToArticles(fullText){
   const root=findFirst(fullText,"MainProvision")||fullText, arts=[];
   for(const a of findAll(root,"Article")){
     const numAttr=(a.attr&&a.attr.Num)||""; let num=null,branch=null;
     if(numAttr){ const p=String(numAttr).split(/[_:\-]/); num=kanjiToInt(p[0]); if(p[1]!=null) branch=kanjiToInt(p[1]); }
-    let caption="",title="",paras=[];
+    let caption="",title="",paras=[],pmap=[],imap=[],off=0;
     for(const ch of (a.children||[])){
       if(!ch||typeof ch!=="object") continue;
       if(ch.tag==="ArticleCaption") caption=textOf(ch).replace(/^[（(]/,"").replace(/[）)]$/,"");
       else if(ch.tag==="ArticleTitle") title=textOf(ch).trim();
-      else if(ch.tag==="Paragraph") paras.push(textOf(ch));
+      else if(ch.tag==="Paragraph"){
+        const ptext=textOf(ch), pstart=off;
+        let pnum=paras.length+1;
+        const pn=findFirst(ch,"ParagraphNum");
+        if(pn){ const t=textOf(pn).replace(/[０-９]/g,function(c){return "０１２３４５６７８９".indexOf(c);}); const nn=parseInt(t,10); if(!isNaN(nn)&&nn>0) pnum=nn; }
+        pmap.push({start:pstart,end:pstart+ptext.length,para:pnum});
+        let coff=pstart;
+        for(const cc of (ch.children||[])){
+          const ctext=textOf(cc);
+          if(cc&&typeof cc==="object"&&cc.tag==="Item"){
+            let inum=kanjiToInt(textOf(findFirst(cc,"ItemTitle")||""));
+            if((inum==null||isNaN(inum))&&cc.attr&&cc.attr.Num) inum=kanjiToInt(String(cc.attr.Num).split(/[_:\-]/)[0]);
+            imap.push({start:coff,end:coff+ctext.length,para:pnum,item:(isNaN(inum)?null:inum)});
+          }
+          coff+=ctext.length;
+        }
+        paras.push(ptext);
+        off=pstart+ptext.length+1;
+      }
     }
     if(num==null&&title){ const mm=title.match(new RegExp("第(["+NUM+"]+)条(?:の(["+NUM+"]+))?")); if(mm){ num=kanjiToInt(mm[1]); if(mm[2]) branch=kanjiToInt(mm[2]); } }
     const numText = title || ("第"+(num!=null?intToKanji(num):"")+"条"+(branch!=null?"の"+intToKanji(branch):""));
-    arts.push({num,branch,numText,caption,body:paras.join("\n").trim()});
+    const raw=paras.join("\n"), lead=raw.length-raw.replace(/^\s+/,"").length, body=raw.trim();
+    if(lead>0){ pmap.forEach(function(s){s.start-=lead;s.end-=lead;}); imap.forEach(function(s){s.start-=lead;s.end-=lead;}); }
+    arts.push({num,branch,numText,caption,body:body,pmap:pmap,imap:imap});
   }
   return arts;
 }
@@ -581,25 +608,29 @@ function analyzeCore(parentArts, childArticles, lawTitle){
       if(ins.kind==="xref"){
         bodyHtml+='<span class="xref" data-target="'+ins.aid+'">'+esc(ins.text)+'</span>';
       } else {
-        const d=ins, p=paraAt(body,d.start), tt=targetType(d.text), blanket=isBlanket(sentenceAround(body,d.start));
+        const d=ins, _loc=locateDeleg(art,d.start), p=_loc.para, pit=_loc.item, tt=targetType(d.text), blanket=isBlanket(sentenceAround(body,d.start));
         let targets=[];
         for(const ca of childArticles){
           if(!typeAllows(tt,ca.docType||"")) continue;
-          let hit=null,loose=null;
+          let itemHit=null,paraHit=null,loose=null;
           for(const c of ca.cites){
             if(c.toParent && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
-              if(c.para===p) hit=c; else if(c.para==null && !loose) loose=c;
+              if(c.para===p){
+                if(pit!=null && c.item!=null){ if(c.item===pit && !itemHit) itemHit=c; }
+                else if(!paraHit) paraHit=c;
+              } else if(c.para==null && !loose) loose=c;
             }
           }
-          const use=hit||loose;
-          if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!hit,impl:!!ca.impl});
+          const use=itemHit||paraHit||loose;
+          if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!(itemHit||paraHit),itemExact:!!itemHit,impl:!!ca.impl});
         }
-        if(targets.some(t=>t.exact)) targets=targets.filter(t=>t.exact);
+        if(targets.some(t=>t.itemExact)) targets=targets.filter(t=>t.itemExact);
+        else if(targets.some(t=>t.exact)) targets=targets.filter(t=>t.exact);
         if(targets.some(t=>t.impl)) targets=targets.filter(t=>t.impl);
         let status, matches=targets, candidate=false;
         if(targets.length){ status="ok"; }
         else {
-          const cseen={}, cands=[];
+          const cseen={}; let cands=[];
           for(const ca of childArticles){
             if(!typeAllows(tt,ca.docType||"")) continue;
             for(const c of ca.cites){
