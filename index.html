@@ -274,6 +274,81 @@
   .tgroup .target{ margin-left:10px }
   .tgexpand{ margin:2px 0 6px 10px; font-family:var(--sans); font-size:11.5px; color:var(--ai); background:transparent; border:1px dashed var(--line-strong); border-radius:8px; padding:3px 10px; cursor:pointer }
   .tgexpand:hover{ border-color:var(--ai); background:var(--ai-tint) }
+
+  /* ===== tabs & views ===== */
+  .tabbar{ background:#14171C; border-bottom:1px solid #2A2F38 }
+  .tabbar-in{ max-width:1300px; margin:0 auto; padding:0 28px; display:flex; gap:2px }
+  .tab{ appearance:none; -webkit-appearance:none; background:transparent; border:0; color:#9AA5B3; font-family:var(--sans); font-weight:700; font-size:14px; padding:13px 20px 11px; cursor:pointer; border-bottom:3px solid transparent; letter-spacing:.02em; display:inline-flex; align-items:center; gap:8px }
+  .tab:hover{ color:#D8DFE9 }
+  .tab.active{ color:#F1D488; border-bottom-color:var(--accent) }
+  .tabbadge{ min-width:19px; height:19px; padding:0 5px; border-radius:999px; background:var(--accent); color:#241A06; font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center }
+  .tabbadge[hidden]{ display:none !important }
+  .view[hidden]{ display:none !important }
+  @media(max-width:600px){ .tabbar-in{ padding:0 10px } .tab{ padding:12px 14px; font-size:13.5px } }
+
+  /* ===== 改正ウォッチ ===== */
+  .watchmast{ padding-top:26px }
+  .watchbar{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-top:2px }
+  .watchbar .qwrap{ flex:1; min-width:240px; display:flex; flex-direction:column; gap:6px }
+  .watchbar .qwrap label{ font-size:11.5px; font-weight:700; color:var(--ink-soft); letter-spacing:.05em }
+  #wq{ width:100%; height:46px; border:1px solid var(--line-strong); border-radius:10px; padding:0 14px; font-family:var(--serif); font-size:16px; color:var(--ink); outline:none; background:var(--panel) }
+  #wq:focus{ border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint) }
+  .watchex{ margin-top:12px }
+  .watchsummary{ margin:16px 0 2px; background:var(--accent-tint); border:1px solid var(--warn-line); border-radius:10px; padding:11px 15px; font-size:13px; color:#6E4E15; font-weight:600; line-height:1.6 }
+  .watchsummary b{ color:var(--warn) }
+  .watchsummary.calm{ background:var(--ai-tint); border-color:#CDDCF0; color:var(--ai-deep) }
+  .watchsummary.calm b{ color:var(--ai-deep) }
+  .watchlist{ margin-top:14px; display:grid; gap:14px }
+  .wcard{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; box-shadow:0 1px 2px rgba(20,30,45,.04) }
+  .wcard.hasnew{ border-color:var(--warn-line); box-shadow:0 0 0 3px var(--warn-tint) }
+  .wcard-h{ display:flex; align-items:flex-start; gap:10px }
+  .wcard-h .wt{ font-family:var(--serif); font-weight:700; font-size:17px; color:var(--ink); flex:1; line-height:1.45 }
+  .wcard-h .wt .wnum{ display:block; font-family:var(--sans); font-size:11.5px; color:var(--none); font-weight:400; margin-top:3px }
+  .wx{ appearance:none; -webkit-appearance:none; border:0; background:transparent; color:var(--none); font-size:19px; cursor:pointer; line-height:1; padding:2px 5px; border-radius:6px }
+  .wx:hover{ background:var(--none-tint); color:var(--ink) }
+  .wcounts{ display:flex; gap:8px; flex-wrap:wrap; margin:11px 0 2px }
+  .wpill{ font-size:11.5px; font-weight:700; border-radius:999px; padding:4px 11px; display:inline-flex; align-items:center; gap:5px }
+  .wpill.up{ background:var(--warn-tint); color:var(--warn); border:1px solid var(--warn-line) }
+  .wpill.new{ background:var(--accent); color:#241A06 }
+  .wpill.none{ background:var(--none-tint); color:var(--none); border:1px solid var(--none-line) }
+  .wsec{ font-size:11px; font-weight:700; letter-spacing:.07em; color:var(--ink-soft); margin:15px 0 6px; padding-bottom:5px; border-bottom:1px solid var(--line) }
+  .wrow{ padding:8px 0 9px; border-bottom:1px dotted var(--line) }
+  .wrow:last-child{ border-bottom:0 }
+  .wrow-t{ font-size:13.5px; color:var(--ink); font-weight:600; line-height:1.55 }
+  .wrow-t a{ color:var(--ai); text-decoration:none; border-bottom:1px dotted var(--ai) }
+  .wrow.isnew .wrow-t:before{ content:"NEW"; display:inline-block; background:var(--accent); color:#241A06; font-size:9.5px; font-weight:800; border-radius:4px; padding:1px 5px; margin-right:7px; vertical-align:1px; letter-spacing:.06em }
+  .wrow-m{ font-size:11.5px; color:var(--none); margin-top:3px }
+  .wrow-m .enf{ color:var(--warn); font-weight:700 }
+  .wcard-f{ display:flex; gap:8px; flex-wrap:wrap; margin-top:13px; padding-top:12px; border-top:1px solid var(--line) }
+  .wbtn{ appearance:none; -webkit-appearance:none; font-family:var(--sans); font-size:12.5px; font-weight:600; border-radius:9px; padding:7px 13px; cursor:pointer; border:1px solid var(--line-strong); background:#fff; color:var(--ai); text-decoration:none; display:inline-flex; align-items:center; gap:6px }
+  .wbtn:hover{ border-color:var(--ai); background:var(--ai-tint) }
+  .wbtn.mark{ color:var(--ink-soft) }
+  .wempty{ text-align:center; color:var(--ink-soft); padding:38px 22px; background:var(--panel); border:1px dashed var(--line-strong); border-radius:14px; font-size:14px; line-height:2 }
+  .watchfoot{ margin-top:20px }
+  .wspin{ display:inline-block; width:13px; height:13px; border:2px solid var(--ai-tint); border-top-color:var(--ai); border-radius:50%; margin-right:7px; vertical-align:-2px; animation:sp .7s linear infinite }
+
+
+  /* ===== 業務分野チップ ===== */
+  .wdblock{ margin-top:6px }
+  .wd-h{ font-size:12.5px; font-weight:700; color:var(--ink); letter-spacing:.02em; margin-bottom:11px }
+  .wd-h .wd-sub{ font-weight:400; color:var(--none); font-size:11.5px; margin-left:8px }
+  .wd-chips{ display:flex; flex-wrap:wrap; gap:9px }
+  .dchip{ appearance:none; -webkit-appearance:none; cursor:pointer; font-family:var(--sans); font-size:13px; font-weight:600; color:var(--ink); background:var(--panel); border:1px solid var(--line-strong); border-radius:999px; padding:9px 15px; display:inline-flex; align-items:center; gap:7px; transition:all .12s }
+  .dchip:hover{ border-color:var(--accent) }
+  .dchip.on{ background:var(--ai); border-color:var(--ai); color:#fff }
+  .dchip.on:hover{ background:var(--ai-deep); border-color:var(--ai-deep) }
+  .dchip[disabled]{ opacity:.7; cursor:default }
+  .dchip .dc-n{ font-size:10.5px; font-weight:700; background:rgba(20,30,45,.09); border-radius:999px; padding:1px 7px }
+  .dchip.on .dc-n{ background:rgba(255,255,255,.22) }
+  .wdmore{ margin-top:16px; border:1px solid var(--line); border-radius:12px; background:var(--panel) }
+  .wdmore>summary{ cursor:pointer; padding:12px 16px; font-size:13px; font-weight:700; color:var(--ai); list-style:none }
+  .wdmore>summary::-webkit-details-marker{ display:none }
+  .wdmore>summary:before{ content:"\25B8  "; color:var(--accent) }
+  .wdmore[open]>summary:before{ content:"\25BE  " }
+  .wdmore .watchbar{ padding:0 16px 16px; margin-top:0 }
+  .watchtools{ margin-top:14px }
+  .wtag{ display:inline-block; font-size:10.5px; font-weight:700; color:var(--ai-deep); background:var(--ai-tint); border:1px solid #CDDCF0; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:2px }
+
 </style>
 </head>
 <body>
@@ -303,6 +378,12 @@
   </defs>
 </svg>
 <div class="topbar"><div class="topbar-in"><span class="brand"><svg class="bicon" viewBox="0 0 24 24" aria-hidden="true"><use href="#bldgIcon"/></svg>政省令リーダー</span><span class="brand-sub">委任先を、原文で確かめる</span></div></div>
+<div class="tabbar"><div class="tabbar-in">
+  <button class="tab active" type="button" data-view="reader">委任先リーダー</button>
+  <button class="tab" type="button" data-view="watch">改正ウォッチ <span class="tabbadge" id="tabNew" hidden>0</span></button>
+</div></div>
+
+<section id="view-reader" class="view">
 
 <div class="hero"><div class="hero-in">
   <header class="mast">
@@ -369,6 +450,36 @@
     <b>仕組みと限界。</b>委任表現と子側の根拠条項を機械的に突き合わせる補助ツールで、法的判断ではありません。政令委任は施行令、省令委任は施行規則と種別を照合し、条・項レベルで紐付けます。包括委任（「その他必要な事項は政令で定める」等）や前項参照の連鎖は一意に定まらないため「要確認」、対応条文が見つからないものは「未整備」（委任先未制定＝休眠委任の可能性を含む）と表示します。号は、委任と受け皿の双方に号が明示されている場合に限り照合します（双方が号まで特定できないものは同一条項の候補を併記します）。結果は必ずe-Gov等の原文で確認してください。
   </footer>
 </div>
+</section>
+
+<section id="view-watch" class="view" hidden>
+  <div class="wrap watchwrap">
+    <header class="mast watchmast">
+      <h1>改正ウォッチ</h1>
+      <p class="sub">担当する<b>業務分野</b>を選ぶと、関係する主な法令が自動でウォッチに入ります。選んだ内容はこの端末に保存され、開くたびに反映されます。分野・法令はいつでも変更できます。</p>
+    </header>
+
+    <div class="wdblock">
+      <div class="wd-h">① 業務分野で選ぶ<span class="wd-sub">タップで選択／再タップで解除・複数可</span></div>
+      <div class="wd-chips" id="wdchips"></div>
+    </div>
+
+    <details class="wdmore">
+      <summary>② 個別に追加・微調整する</summary>
+      <div class="watchbar">
+        <div class="qwrap"><label for="wq">法令名・法令ID（例：個人情報保護法／貸金業法）</label>
+          <input id="wq" type="text" placeholder="例：個人情報保護法" autocomplete="off"></div>
+        <button class="btn primary" id="wadd" type="button">＋ 追加</button>
+      </div>
+    </details>
+
+    <div class="watchtools"><button class="btn alt" id="wrefresh" type="button">↻ 最新の改正を再取得</button></div>
+
+    <div class="watchsummary" id="watchsummary" hidden></div>
+    <div class="watchlist" id="watchlist"></div>
+    <footer class="foot watchfoot"><b>仕組みと限界。</b>改正情報は e-Gov 法令API（改正沿革）を、この画面を開いたときに取得して表示する補助ツールです（サーバーが自動で巡回してメール等で通知するものではありません）。表示できるのは<b>公布済みの改正</b>で、パブコメ・審議会など公布前の動きは含みません。「新着」はこの端末で前回表示した時点以降に増えた改正を指し、設定・既読はこの端末内にのみ保存されます。最終確認は必ず <a href="https://laws.e-gov.go.jp/" target="_blank" rel="noopener">e-Gov</a> の原文で。</footer>
+  </div>
+</section>
 
   <div id="peek" class="peek" hidden></div>
   <div id="histoverlay" class="histoverlay" hidden></div>
@@ -857,7 +968,7 @@ function typeAllows(dt, doc){
   if(dt==="政省令") return true;
   return doc!=="政令";
 }
-const LAW_ALIAS={"個人情報保護法":"個人情報の保護に関する法律","資金決済法":"資金決済に関する法律","マイナンバー法":"行政手続における特定の個人を識別するための番号の利用等に関する法律","番号法":"行政手続における特定の個人を識別するための番号の利用等に関する法律","景表法":"不当景品類及び不当表示防止法","独禁法":"私的独占の禁止及び公正取引の確保に関する法律","下請法":"下請代金支払遅延等防止法","特商法":"特定商取引に関する法律","労基法":"労働基準法","道交法":"道路交通法","犯収法":"犯罪による収益の移転防止に関する法律","宅建業法":"宅地建物取引業法","金商法":"金融商品取引法","プロバイダ責任制限法":"特定電気通信による情報の流通によって発生する権利侵害等への対処に関する法律"};
+const LAW_ALIAS={"個人情報保護法":"個人情報の保護に関する法律","資金決済法":"資金決済に関する法律","マイナンバー法":"行政手続における特定の個人を識別するための番号の利用等に関する法律","番号法":"行政手続における特定の個人を識別するための番号の利用等に関する法律","景表法":"不当景品類及び不当表示防止法","独禁法":"私的独占の禁止及び公正取引の確保に関する法律","下請法":"下請代金支払遅延等防止法","特商法":"特定商取引に関する法律","労基法":"労働基準法","道交法":"道路交通法","犯収法":"犯罪による収益の移転防止に関する法律","宅建業法":"宅地建物取引業法","金商法":"金融商品取引法","プロバイダ責任制限法":"特定電気通信による情報の流通によって発生する権利侵害等への対処に関する法律","労働者派遣法":"労働者派遣事業の適正な運営の確保及び派遣労働者の保護等に関する法律","育児介護休業法":"育児休業、介護休業等育児又は家族介護を行う労働者の福祉に関する法律","フリーランス新法":"特定受託事業者に係る取引の適正化等に関する法律","廃棄物処理法":"廃棄物の処理及び清掃に関する法律","薬機法":"医薬品、医療機器等の品質、有効性及び安全性の確保等に関する法律"};
 async function findLaw(q){
   if(/^[0-9A-Za-z]{10,}$/.test(q)) return {id:q,title:q,num:""};
   q=LAW_ALIAS[q]||q;
@@ -1121,6 +1232,198 @@ function showXrefPeek(x){
   rd.addEventListener("mouseout",function(e){ if(e.target.closest(".dl")||e.target.closest(".xref")) hidePeek(); });
   window.addEventListener("scroll",hidePeek,true);
 })();
+
+
+/* ================= 改正ウォッチ（別タブ） ================= */
+function switchView(v){
+  var tabs=document.querySelectorAll(".tab");
+  for(var i=0;i<tabs.length;i++){ tabs[i].classList.toggle("active", tabs[i].getAttribute("data-view")===v); }
+  var vr=document.getElementById("view-reader"), vw=document.getElementById("view-watch");
+  if(vr) vr.hidden=(v!=="reader");
+  if(vw) vw.hidden=(v!=="watch");
+  if(v==="watch" && window.__watchRender){ window.__watchRender(); }
+  window.scrollTo(0,0);
+}
+(function(){
+  var LS_WATCH="srw_watch_v1", LS_SEEN="srw_seen_v1", LS_DOM="srw_domains_v1", CACHE={};
+  var DOMAINS={
+    privacy:{label:"個人情報・データ保護",emoji:"🔒",laws:["個人情報保護法","マイナンバー法","プロバイダ責任制限法"]},
+    labor:{label:"労務・人事",emoji:"🏢",laws:["労働基準法","労働契約法","労働安全衛生法","労働者派遣法","育児介護休業法","最低賃金法"]},
+    finance:{label:"金融・決済",emoji:"💴",laws:["資金決済法","金融商品取引法","貸金業法","犯収法","銀行法"]},
+    consumer:{label:"消費者・広告・取引",emoji:"🛒",laws:["消費者契約法","特商法","景表法"]},
+    competition:{label:"競争・下請取引",emoji:"⚖️",laws:["独禁法","下請法","フリーランス新法"]},
+    realestate:{label:"不動産・建設",emoji:"🏠",laws:["宅建業法","建築基準法","都市計画法"]},
+    environment:{label:"環境",emoji:"🍃",laws:["廃棄物処理法","大気汚染防止法","水質汚濁防止法"]},
+    ip:{label:"知的財産",emoji:"📚",laws:["特許法","商標法","著作権法","不正競争防止法"]},
+    medical:{label:"医薬・医療",emoji:"💊",laws:["薬機法","医療法"]}
+  };
+  function load(k,d){ try{ return JSON.parse(localStorage.getItem(k))||d; }catch(e){ return d; } }
+  function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function getWatch(){ return load(LS_WATCH,[]); }
+  function setWatch(v){ save(LS_WATCH,v); }
+  function getSeen(){ return load(LS_SEEN,{}); }
+  function setSeen(v){ save(LS_SEEN,v); }
+  function getDoms(){ return load(LS_DOM,[]); }
+  function setDoms(v){ save(LS_DOM,v); }
+  function cssEsc(x){ return String(x).replace(/[^A-Za-z0-9_-]/g,""); }
+  function sig(r){ return r.amId || (r.amNum+"|"+r.enf+"|"+r.sched); }
+  function today(){ return new Date().toISOString().slice(0,10); }
+  function card(id){ return document.querySelector('.wcard[data-id="'+cssEsc(id)+'"]'); }
+
+  function extractRows(data){
+    var list=(data&&(data.law_revisions||data.revisions||data.laws||data.items))||(Array.isArray(data)?data:[]);
+    if(!list) return [];
+    var rows=list.map(function(it){ var ri=it.revision_info||it; return {
+      amLaw: ri.amendment_law_title || ri.amendment_law_num || "（制定・その他）",
+      amNum: ri.amendment_law_num || "",
+      promu: ri.amendment_promulgate_date || "",
+      enf:   ri.amendment_enforcement_date || "",
+      sched: ri.amendment_scheduled_enforcement_date || "",
+      amId:  ri.amendment_law_id || "",
+      repeal:(ri.repeal_status && ri.repeal_status!=="None" && ri.repeal_status!=="") ? "廃止":""
+    }; });
+    var kd=function(r){ return r.enf||r.sched||r.promu||""; };
+    rows.sort(function(a,b){ return kd(b).localeCompare(kd(a)); });
+    return rows;
+  }
+  function splitRows(rows){
+    var t=today();
+    return {
+      future: rows.filter(function(r){ return (r.sched && !r.enf) || (r.enf && r.enf>t); }),
+      past:   rows.filter(function(r){ return !((r.sched && !r.enf) || (r.enf && r.enf>t)); })
+    };
+  }
+  function fmtRow(r, isNew){
+    var when = r.enf ? ('施行 '+esc(r.enf)) : (r.sched ? ('施行予定 '+esc(r.sched)) : '');
+    var t = r.amId ? ('<a href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(r.amId)+'" target="_blank" rel="noopener">'+esc(r.amLaw)+' ↗</a>') : esc(r.amLaw);
+    var meta = (r.promu?'公布 '+esc(r.promu):'') + (when ? ((r.promu?' ／ ':'')+'<span class="enf">'+when+'</span>') : '');
+    return '<div class="wrow'+(isNew?' isnew':'')+'"><div class="wrow-t">'+t+(r.repeal?' <span class="histrepeal">［廃止］</span>':'')+'</div>'+(meta?'<div class="wrow-m">'+meta+'</div>':'')+'</div>';
+  }
+  function domTag(law){
+    if(law.domains && law.domains.length){ var d=DOMAINS[law.domains[0]]; return '<span class="wtag">'+(d?esc(d.label):esc(law.domains[0]))+(law.domains.length>1?' ＋'+(law.domains.length-1):'')+'</span>'; }
+    if(law.manual) return '<span class="wtag">個別</span>';
+    return '';
+  }
+  function renderCard(law, rows, seenSigs){
+    var s=splitRows(rows);
+    var isNewSig=function(r){ return seenSigs.indexOf(sig(r))<0; };
+    var newRows=rows.filter(isNewSig), hasNew=newRows.length>0;
+    var h='<div class="wcard'+(hasNew?' hasnew':'')+'" data-id="'+esc(law.id)+'">';
+    h+='<div class="wcard-h"><div class="wt">'+esc(law.title)+domTag(law)+(law.num?'<span class="wnum">'+esc(law.num)+'</span>':'')+'</div><button class="wx" type="button" data-rm="'+esc(law.id)+'" title="ウォッチから外す">×</button></div>';
+    h+='<div class="wcounts">';
+    h+= s.future.length ? '<span class="wpill up">⚠ 未施行 '+s.future.length+'件</span>' : '<span class="wpill none">未施行なし</span>';
+    if(hasNew) h+='<span class="wpill new">● 新着 '+newRows.length+'件</span>';
+    h+='</div>';
+    if(s.future.length){ h+='<div class="wsec">未施行（公布済み・施行待ち）</div>'; s.future.forEach(function(r){ h+=fmtRow(r,isNewSig(r)); }); }
+    if(s.past.length){ h+='<div class="wsec">最近の改正</div>'; s.past.slice(0,3).forEach(function(r){ h+=fmtRow(r,isNewSig(r)); }); }
+    if(!s.future.length && !s.past.length){ h+='<div class="wrow"><div class="wrow-m">改正沿革を取得できませんでした。e-Govの原文でご確認ください。</div></div>'; }
+    h+='<div class="wcard-f">';
+    h+='<a class="wbtn" href="#" data-open="'+esc(law.title)+'">リーダーで開く</a>';
+    h+='<button class="wbtn" type="button" data-hist="'+esc(law.id)+'">改正沿革をすべて見る</button>';
+    if(hasNew) h+='<button class="wbtn mark" type="button" data-seen="'+esc(law.id)+'">既読にする</button>';
+    h+='</div></div>';
+    return h;
+  }
+  function updateSummary(totalNew, lawsWithNew){
+    var el=document.getElementById("watchsummary"), tab=document.getElementById("tabNew"), n=getWatch().length;
+    if(!n){ el.hidden=true; if(tab) tab.hidden=true; return; }
+    el.hidden=false;
+    if(totalNew>0){
+      el.className="watchsummary";
+      el.innerHTML='<b>'+lawsWithNew+'件</b> の法令に、前回チェック以降の新しい動きがあります（新着 <b>'+totalNew+'件</b>）。<button class="wbtn mark" type="button" id="wallseen" style="margin-left:10px">すべて既読にする</button>';
+      if(tab){ tab.hidden=false; tab.textContent=lawsWithNew; }
+    }else{
+      el.className="watchsummary calm";
+      el.innerHTML='ウォッチ中 <b>'+n+'件</b>。前回チェック以降の新しい動きはありません（未施行の改正は各カードで確認できます）。';
+      if(tab) tab.hidden=true;
+    }
+  }
+  function renderChips(){
+    var host=document.getElementById("wdchips"); if(!host) return;
+    var sel=getDoms(), h="";
+    Object.keys(DOMAINS).forEach(function(k){ var d=DOMAINS[k], on=sel.indexOf(k)>=0;
+      h+='<button class="dchip'+(on?' on':'')+'" type="button" data-d="'+k+'">'+d.emoji+' '+esc(d.label)+' <span class="dc-n">'+d.laws.length+'</span></button>'; });
+    host.innerHTML=h;
+  }
+  function toggleDomain(key){
+    var d=DOMAINS[key]; if(!d) return;
+    var sel=getDoms(), on=sel.indexOf(key)>=0;
+    if(on){
+      setDoms(sel.filter(function(x){ return x!==key; }));
+      var w=getWatch().map(function(l){ l.domains=(l.domains||[]).filter(function(x){ return x!==key; }); return l; }).filter(function(l){ return l.manual || (l.domains&&l.domains.length); });
+      setWatch(w); renderChips(); renderAll(); return;
+    }
+    sel.push(key); setDoms(sel); renderChips();
+    var host=document.getElementById("wdchips"), chip=host?host.querySelector('.dchip[data-d="'+key+'"]'):null;
+    if(chip){ chip.disabled=true; chip.innerHTML=d.emoji+' '+esc(d.label)+' <span class="wspin"></span>'; }
+    Promise.all(d.laws.map(function(a){ return findLaw(a).then(function(h){ return (h&&h.id)?h:null; }).catch(function(){ return null; }); })).then(function(hits){
+      var w=getWatch();
+      hits.forEach(function(h){ if(!h) return; var ex=w.filter(function(l){ return l.id===h.id; })[0];
+        if(ex){ ex.domains=ex.domains||[]; if(ex.domains.indexOf(key)<0) ex.domains.push(key); }
+        else w.push({id:h.id,title:h.title,num:h.num||"",domains:[key],manual:false}); });
+      setWatch(w); renderChips(); renderAll();
+    });
+  }
+  function renderAll(){
+    var wrap=document.getElementById("watchlist"), watch=getWatch();
+    if(!wrap) return;
+    if(!watch.length){
+      wrap.innerHTML='<div class="wempty">まだ何も選ばれていません。<br>上の<b>業務分野</b>から、担当する分野をタップしてください。<br><span style="font-size:12px;color:var(--none)">選ぶと、この画面を開くたびに関係法令の未施行の改正と新しい動きがまとまって表示されます。</span></div>';
+      updateSummary(0,0); return;
+    }
+    wrap.innerHTML=watch.map(function(l){ return '<div class="wcard loading" data-id="'+esc(l.id)+'"><div class="wcard-h"><div class="wt">'+esc(l.title)+domTag(l)+'</div></div><div class="wrow-m" style="margin-top:10px"><span class="wspin"></span> 改正情報を取得中…</div></div>'; }).join("");
+    var seenObj=getSeen(), totalNew=0, lawsWithNew=0, done=0;
+    watch.forEach(function(l){
+      var fin=function(){ done++; if(done===watch.length) updateSummary(totalNew,lawsWithNew); };
+      var fill=function(rows){
+        CACHE[l.id]=rows;
+        if(!(l.id in seenObj)){ seenObj[l.id]=rows.map(sig); setSeen(seenObj); }
+        var seenSigs=seenObj[l.id]||[];
+        var c=card(l.id); if(c) c.outerHTML=renderCard(l,rows,seenSigs);
+        var nr=rows.filter(function(r){ return seenSigs.indexOf(sig(r))<0; });
+        if(nr.length){ lawsWithNew++; totalNew+=nr.length; }
+        fin();
+      };
+      if(CACHE[l.id]){ fill(CACHE[l.id]); return; }
+      apiRevisions(l.id).then(function(data){ fill(extractRows(data)); }).catch(function(){
+        var c=card(l.id);
+        if(c) c.outerHTML='<div class="wcard" data-id="'+esc(l.id)+'"><div class="wcard-h"><div class="wt">'+esc(l.title)+domTag(l)+'</div><button class="wx" type="button" data-rm="'+esc(l.id)+'" title="ウォッチから外す">×</button></div><div class="wrow-m" style="margin-top:10px">改正情報を取得できませんでした。<a href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(l.id)+'" target="_blank" rel="noopener">e-Govで確認 ↗</a></div></div>';
+        fin();
+      });
+    });
+  }
+  function addLaw(q){
+    q=(q||"").trim(); if(!q) return;
+    var btn=document.getElementById("wadd"), ot=btn?btn.textContent:""; if(btn){ btn.disabled=true; btn.textContent="追加中…"; }
+    findLaw(q).then(function(hit){
+      if(!hit||!hit.id){ alert("「"+q+"」に一致する法令が見つかりませんでした。正式名称や別名（例：個人情報保護法）でお試しください。"); return; }
+      var w=getWatch(), ex=w.filter(function(l){ return l.id===hit.id; })[0];
+      if(ex){ ex.manual=true; } else w.push({id:hit.id,title:hit.title,num:hit.num||"",domains:[],manual:true});
+      setWatch(w); document.getElementById("wq").value=""; renderAll();
+    }).catch(function(e){ alert("検索でエラーが発生しました（"+((e&&e.message)||e)+"）。この画面をブラウザで直接開くとe-Govにアクセスできます。"); }).then(function(){ if(btn){ btn.disabled=false; btn.textContent=ot; } });
+  }
+  function markSeen(id){ var seen=getSeen(); seen[id]=(CACHE[id]||[]).map(sig); setSeen(seen); renderAll(); }
+  function removeLaw(id){ setWatch(getWatch().filter(function(l){ return l.id!==id; })); var seen=getSeen(); delete seen[id]; setSeen(seen); delete CACHE[id]; renderAll(); }
+
+  var wdc=document.getElementById("wdchips");
+  if(wdc) wdc.addEventListener("click",function(e){ var c=e.target.closest(".dchip"); if(c && !c.disabled){ toggleDomain(c.getAttribute("data-d")); } });
+  var wadd=document.getElementById("wadd"); if(wadd) wadd.addEventListener("click",function(){ addLaw(document.getElementById("wq").value); });
+  var wq=document.getElementById("wq"); if(wq) wq.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); addLaw(wq.value); } });
+  var wref=document.getElementById("wrefresh"); if(wref) wref.addEventListener("click",function(){ CACHE={}; renderAll(); });
+  var wl=document.getElementById("watchlist");
+  if(wl) wl.addEventListener("click",function(e){
+    var rm=e.target.closest("[data-rm]"); if(rm){ removeLaw(rm.getAttribute("data-rm")); return; }
+    var sn=e.target.closest("[data-seen]"); if(sn){ markSeen(sn.getAttribute("data-seen")); return; }
+    var hs=e.target.closest("[data-hist]"); if(hs){ openHistory(hs.getAttribute("data-hist")); return; }
+    var op=e.target.closest("[data-open]"); if(op){ e.preventDefault(); switchView("reader"); document.getElementById("q").value=op.getAttribute("data-open"); run(); return; }
+  });
+  var ws=document.getElementById("watchsummary");
+  if(ws) ws.addEventListener("click",function(e){
+    if(e.target && e.target.id==="wallseen"){ var seen=getSeen(); getWatch().forEach(function(l){ seen[l.id]=(CACHE[l.id]||[]).map(sig); }); setSeen(seen); renderAll(); }
+  });
+  window.__watchRender=function(){ renderChips(); renderAll(); };
+})();
+(function(){ var tabs=document.querySelectorAll(".tab"); for(var i=0;i<tabs.length;i++){ (function(t){ t.addEventListener("click",function(){ switchView(t.getAttribute("data-view")); }); })(tabs[i]); } })();
 
 </script>
 </body>
