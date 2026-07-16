@@ -76,9 +76,9 @@
 
   .reader{margin-top:6px}
   .lawhead{font-family:var(--serif); font-weight:700; font-size:16px; color:var(--ai-deep); border-left:4px solid var(--ai); padding:2px 0 2px 12px; margin:18px 0 12px}
-  article.art{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 22px; margin:12px 0; box-shadow:0 1px 2px rgba(20,30,45,.04)}
-  .art .cap{font-family:var(--sans); font-size:12px; font-weight:700; color:var(--ai); letter-spacing:.04em}
-  .art .body{font-family:var(--serif); font-size:15.5px; line-height:1.95; margin-top:3px; white-space:pre-wrap; word-break:normal}
+  article.art{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 26px; margin:14px 0; box-shadow:0 1px 2px rgba(20,30,45,.04)}
+  .art .cap{font-family:var(--sans); font-size:12px; font-weight:700; color:var(--ai); letter-spacing:.06em; margin-bottom:2px}
+  .art .body{font-family:var(--serif); font-size:15.5px; line-height:1.95; margin-top:4px; white-space:pre-wrap; word-break:normal; max-width:50em}
   body.tidy .art .body{line-height:2.1}
   .art .num{font-family:var(--serif); font-weight:700; font-size:15px; margin-right:.5em}
 
@@ -87,7 +87,8 @@
   .dl.ok{color:var(--ok); border-color:var(--ok-line); background:var(--ok-tint)} .dl.ok:hover{background:#d5ece7}
   .dl.warn{color:var(--warn); border-color:var(--warn-line); background:var(--warn-tint)} .dl.warn:hover{background:#f4e6c9}
   .dl.none{color:var(--none); border-color:var(--none-line); background:var(--none-tint); border-bottom-style:dashed} .dl.none:hover{background:#e3e7ec}
-  .dl .tag{font-family:var(--mono); font-size:.62em; vertical-align:.28em; margin-left:.15em; font-weight:700; opacity:.85}
+  .dl .tag{font-family:var(--sans); font-size:.58em; vertical-align:.22em; margin-left:.35em; font-weight:700; letter-spacing:.02em; padding:.18em .55em; border-radius:999px; color:#fff}
+  .dl.ok .tag{background:var(--ok)} .dl.warn .tag{background:var(--warn)} .dl.none .tag{background:var(--none)}
 
   .exp{margin-top:11px; border-radius:9px; overflow:hidden; border:1px solid var(--line)}
   .exp[hidden]{display:none}
@@ -165,6 +166,12 @@
   .brand-sub{ font-size:11px; color:#9FB2CE; letter-spacing:.1em }
   .side-h{ font-size:11px; font-weight:700; letter-spacing:.14em; color:var(--ai); margin:2px 2px 8px }
   @media(max-width:600px){ .topbar-in{ padding:10px 16px } .wrap{ padding-left:16px; padding-right:16px } }
+  article.art:hover{ border-color:var(--line-strong) }
+  .dl{ padding:.05em .18em }
+  .toc .tocitem{ font-size:12.5px }
+  .filterbar .chip{ font-size:12px; padding:3px 11px }
+  .lawhead{ font-size:15px }
+  .art .num{ color:var(--ai-deep) }
 </style>
 </head>
 <body>
@@ -331,7 +338,20 @@ function extractCitations(body, parentTitle){
         else if(LAWTAIL.test(name)) toParent=false;
         else toParent=nearest(m.index); }
     } else toParent=nearest(m.index);
-    out.push({ref,art:kanjiToInt(m[2]),branch:m[3]?kanjiToInt(m[3]):null,para:m[4]?kanjiToInt(m[4]):null,item:m[5]?kanjiToInt(m[5]):null,index:m.index,text:m[0],toParent});
+    const _art=kanjiToInt(m[2]), _branch=m[3]?kanjiToInt(m[3]):null, _item=m[5]?kanjiToInt(m[5]):null;
+    if(m[4]==null){ out.push({ref,art:_art,branch:_branch,para:null,item:_item,index:m.index,text:m[0],toParent}); }
+    else{
+      const NP="[〇零一二三四五六七八九十百千0-9]+";
+      const oneRe=new RegExp("^(?:、|及び|並びに|又は|若しくは)第("+NP+")項");
+      const rngRe=new RegExp("^から第("+NP+")項まで");
+      const paras=[kanjiToInt(m[4])]; let tail=body.slice(m.index+m[0].length), g=0, mm;
+      while(g++<12){
+        if((mm=tail.match(rngRe))){ const to=kanjiToInt(mm[1]), from=paras[paras.length-1]; if(to>from && to-from<=40){ for(let x=from+1;x<=to;x++) paras.push(x); } else paras.push(to); tail=tail.slice(mm[0].length); continue; }
+        if((mm=tail.match(oneRe))){ paras.push(kanjiToInt(mm[1])); tail=tail.slice(mm[0].length); continue; }
+        break;
+      }
+      const seen={}; paras.forEach(function(pp,i){ if(seen[pp])return; seen[pp]=1; out.push({ref,art:_art,branch:_branch,para:pp,item:(i===0?_item:null),index:m.index,text:m[0],toParent}); });
+    }
   }
   return out;
 }
@@ -466,7 +486,7 @@ function analyzeCore(parentArts, childArticles, lawTitle){
         const k="k"+(key++);
         MATCHDATA[k]={status,tt,para:p,artNum:art.numText,caption:art.caption,deleg:d.text,matches:targets};
         const tag = status==="ok" ? (targets.length>1?targets.length+"件":"確定") : (status==="warn"?"要確認":"未整備");
-        bodyHtml+='<button class="dl '+status+'" data-k="'+k+'">'+esc(d.text)+'<span class="tag">▸'+tag+'</span></button>';
+        bodyHtml+='<button class="dl '+status+'" data-k="'+k+'">'+esc(d.text)+'<span class="tag">'+tag+'</span></button>';
       }
       cursor=ins.end;
     }
