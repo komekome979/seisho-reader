@@ -189,25 +189,6 @@
   .searchhelp{ font-size:11.5px; color:var(--ink-soft); margin:8px 2px 0; line-height:1.75 }
   .searchhelp b{ color:var(--ai-deep); font-weight:700 }
   .escalate{ color:var(--warn); border-bottom:1px dotted var(--warn); cursor:pointer; white-space:nowrap }
-  .histext{ font-size:11.5px; color:var(--ai); text-decoration:none; border-bottom:1px dotted var(--ai); margin-left:2px }
-  .lawlinks .histbtn{ font-family:inherit }
-  .histoverlay{ position:fixed; inset:0; background:rgba(20,23,28,.45); z-index:60 }
-  .histpanel{ position:fixed; top:0; right:0; height:100%; width:min(430px,92vw); background:var(--panel); z-index:61; box-shadow:-8px 0 30px rgba(0,0,0,.18); display:flex; flex-direction:column }
-  .histhead{ display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#14171C; color:#fff; font-family:var(--serif); font-weight:700; font-size:15px }
-  .histclose{ background:none; border:none; color:#fff; font-size:22px; cursor:pointer; line-height:1; padding:0 4px }
-  .histbody{ overflow:auto; padding:14px 16px }
-  .histsec{ font-size:12px; font-weight:800; letter-spacing:.04em; margin:16px 0 8px; padding:4px 10px; border-radius:6px; display:inline-block }
-  .histsec.future{ background:var(--warn-tint); color:var(--warn) }
-  .histsec.past{ background:var(--ai-tint); color:var(--ai-deep) }
-  .histrow{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin:8px 0 }
-  .histtitle{ font-family:var(--serif); font-size:13.5px; color:var(--ink); line-height:1.55 }
-  .histnum{ font-size:11px; color:var(--ink-soft); margin-top:3px }
-  .histdates{ font-size:11.5px; color:var(--ink-soft); margin-top:5px }
-  .histrepeal{ color:#B23; font-weight:700 }
-  .histempty{ color:var(--ink-soft); font-size:13px; padding:20px 4px; line-height:1.8 }
-  .histempty a{ color:var(--ai) }
-  .histnote{ font-size:11px; color:var(--none); margin-top:18px; line-height:1.6; border-top:1px solid var(--line); padding-top:10px }
-  .histnote a{ color:var(--ai) }
 </style>
 </head>
 <body>
@@ -289,11 +270,6 @@
 </div>
 
   <div id="peek" class="peek" hidden></div>
-  <div id="histoverlay" class="histoverlay" hidden></div>
-  <aside id="histpanel" class="histpanel" hidden aria-label="改正履歴">
-    <div class="histhead"><span>改正履歴</span><button id="histclose" class="histclose" type="button" aria-label="閉じる">×</button></div>
-    <div id="histbody" class="histbody"></div>
-  </aside>
 <script>
 "use strict";
 const API = "https://laws.e-gov.go.jp/api/2";
@@ -680,10 +656,6 @@ async function apiKeyword(keyword, limit){
   const r=await fetch(API+"/keyword?keyword="+encodeURIComponent(keyword)+"&limit="+(limit||80)+"&response_format=json");
   if(!r.ok) throw new Error("keyword API "+r.status); return r.json();
 }
-async function apiRevisions(id){
-  const r=await fetch(API+"/law_revisions/"+encodeURIComponent(id)+"?response_format=json");
-  if(!r.ok) throw new Error("law_revisions API "+r.status); return r.json();
-}
 function pickTitle(l){ return ((l.revision_info||l.current_revision_info||l.law_info||{}).law_title)||((l.law_info||{}).law_title)||""; }
 function pickId(l){ return (l.law_info||{}).law_id; }
 function pickNum(l){ return ((l.law_info||{}).law_num)||((l.revision_info||{}).law_num)||""; }
@@ -824,7 +796,7 @@ async function run(){
     }
 
     analyzeCore(parentArts, childArticles, law.title);
-    let llhtml = (parentNum?'<span class="lawnum">'+esc(parentNum)+'</span>':"")+'<button class="histbtn" type="button" data-lawid="'+esc(law.id)+'">改正履歴を見る</button>'+'<a class="histext" href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(law.id)+'" target="_blank" rel="noopener">e-Govで開く \u2197</a>';
+    let llhtml = (parentNum?'<span class="lawnum">'+esc(parentNum)+'</span>':"")+'<a class="histbtn" href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(law.id)+'" target="_blank" rel="noopener">改正履歴・沿革を見る（e-Gov）\u2197</a>';
     const noneCnt=parseInt((document.getElementById("t-none")||{}).textContent||"0",10);
     document.getElementById("lawlinks").innerHTML = llhtml;
     if(parsed.art) setTimeout(function(){ jumpToArticle(parsed.art, parsed.branch); },80);
@@ -867,50 +839,6 @@ async function runKeyword(){
 }
 document.getElementById("kwgo").addEventListener("click",runKeyword);
 document.getElementById("reader").addEventListener("click",function(e){ const it=e.target.closest(".kwitem"); if(!it) return; document.getElementById("q").value=it.getAttribute("data-open"); run(); });
-function renderHistory(data){
-  const list=(data&&(data.law_revisions||data.revisions||data.laws||data.items))||(Array.isArray(data)?data:[]);
-  if(!list||!list.length) return '<div class="histempty">改正履歴を取得できませんでした。<br>e-Govの原文でご確認ください。</div>';
-  const rows=list.map(function(it){ const ri=it.revision_info||it; return {
-    amLaw: ri.amendment_law_title || ri.amendment_law_num || "（制定・その他）",
-    amNum: ri.amendment_law_num || "",
-    promu: ri.amendment_promulgate_date || "",
-    enf: ri.amendment_enforcement_date || "",
-    sched: ri.amendment_scheduled_enforcement_date || "",
-    repeal: (ri.repeal_status && ri.repeal_status!=="None" && ri.repeal_status!=="") ? "廃止" : ""
-  }; });
-  const keyDate=function(r){ return r.enf||r.sched||r.promu||""; };
-  rows.sort(function(a,b){ return keyDate(b).localeCompare(keyDate(a)); });
-  const today=new Date().toISOString().slice(0,10);
-  const future=rows.filter(function(r){ return (r.sched && !r.enf) || (r.enf && r.enf>today); });
-  const past=rows.filter(function(r){ return !((r.sched && !r.enf) || (r.enf && r.enf>today)); });
-  function block(title,arr,cls){
-    if(!arr.length) return "";
-    var h='<div class="histsec '+cls+'">'+title+'</div>';
-    for(const r of arr){
-      var when = r.enf ? ('施行 '+esc(r.enf)) : (r.sched ? ('施行予定 '+esc(r.sched)) : '');
-      h+='<div class="histrow"><div class="histtitle">'+esc(r.amLaw)+(r.repeal?' <span class="histrepeal">［廃止］</span>':'')+'</div>'
-        +(r.amNum?'<div class="histnum">'+esc(r.amNum)+'</div>':'')
-        +'<div class="histdates">'+(r.promu?'公布 '+esc(r.promu):'')+(when?(r.promu?' ／ ':'')+when:'')+'</div>'
-        +'</div>';
-    }
-    return h;
-  }
-  var html=block('未施行（公布済・施行待ち）',future,'future')+block('これまでの改正',past,'past');
-  html+='<div class="histnote">改正履歴は e-Gov 法令API のデータです。最終確認は <a href="https://laws.e-gov.go.jp/" target="_blank" rel="noopener">e-Gov</a> の原文で。</div>';
-  return html;
-}
-async function openHistory(lawId){
-  const ov=document.getElementById("histoverlay"), pn=document.getElementById("histpanel"), bd=document.getElementById("histbody");
-  ov.hidden=false; pn.hidden=false;
-  bd.innerHTML='<div class="histempty"><span class="spin"></span> 改正履歴を取得中…</div>';
-  try{ const data=await apiRevisions(lawId); bd.innerHTML=renderHistory(data); }
-  catch(e){ bd.innerHTML='<div class="histempty">改正履歴を取得できませんでした（'+esc(e.message||e)+'）。<br>このファイルをダウンロードしてブラウザで開くとe-Govにアクセスできます。<br><br><a href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(lawId)+'" target="_blank" rel="noopener">e-Govで確認する \u2197</a></div>'; }
-}
-function closeHistory(){ document.getElementById("histoverlay").hidden=true; document.getElementById("histpanel").hidden=true; }
-document.getElementById("lawlinks").addEventListener("click",function(e){ const b=e.target.closest(".histbtn"); if(!b) return; e.preventDefault(); openHistory(b.getAttribute("data-lawid")); });
-document.getElementById("histclose").addEventListener("click",closeHistory);
-document.getElementById("histoverlay").addEventListener("click",closeHistory);
-document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeHistory(); });
 
 
 /* ---------- ホバー・プレビュー ---------- */
