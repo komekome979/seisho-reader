@@ -592,9 +592,10 @@ function analyzeCore(parentArts, childArticles, lawTitle){
             }
           }
           const use=hit||loose;
-          if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!hit});
+          if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!hit,impl:!!ca.impl});
         }
         if(targets.some(t=>t.exact)) targets=targets.filter(t=>t.exact);
+        if(targets.some(t=>t.impl)) targets=targets.filter(t=>t.impl);
         let status, matches=targets, candidate=false;
         if(targets.length){ status="ok"; }
         else {
@@ -604,10 +605,11 @@ function analyzeCore(parentArts, childArticles, lawTitle){
             for(const c of ca.cites){
               if(c.toParent && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
                 const ck=(ca.law||"")+"|"+(ca.numText||"");
-                if(!cseen[ck]){ cseen[ck]=1; cands.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:c.text,exact:false}); }
+                if(!cseen[ck]){ cseen[ck]=1; cands.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:c.text,exact:false,impl:!!ca.impl}); }
               }
             }
           }
+          if(cands.some(x=>x.impl)) cands=cands.filter(x=>x.impl);
           if(cands.length){ status="warn"; matches=cands; candidate=true; }
           else if(blanket){ status="warn"; }
           else { status="none"; }
@@ -825,20 +827,23 @@ async function discoverChildren(title){
 }
 async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
   const seen={}, cand=[];
-  const queries=[]; if(parentNum) queries.push({q:parentNum,num:true,lim:400}); if(parentTitle) queries.push({q:parentTitle,num:false,lim:120});
+  const queries=[]; if(parentNum) queries.push({q:parentNum,num:true,lim:600}); if(parentTitle) queries.push({q:parentTitle,num:false,lim:150});
   for(const qq of queries){
     let data; try{ data=await apiKeyword(qq.q, qq.lim||100); }catch(e){ continue; }
     for(const it of (data.items||data.laws||[])){
       const li=it.law_info||it; const id=li.law_id, num=li.law_num, title=li.law_title||pickTitle(it);
       if(!id || (haveIds&&haveIds[id])) continue;
       const dt=classifyDocType(num); if(!dt) continue;
-      if(seen[id]){ if(qq.num) seen[id].fromNum=true; continue; }
-      const c={id:id,num:num,title:title,docType:dt,fromNum:qq.num};
+      const sents=(it.sentences||[]).map(function(x){return x.text||"";}).join(" ");
+      const enact=/(の規定に基づ|に基づき、|規定を実施するため|の委任に基づ|に基づく命令|の規定による委任)/.test(sents);
+      const defref=/をいう[。）]/.test(sents);
+      if(seen[id]){ if(qq.num) seen[id].fromNum=true; if(enact) seen[id].enact=true; if(defref) seen[id].defref=true; continue; }
+      const c={id:id,num:num,title:title,docType:dt,fromNum:qq.num,enact:enact,defref:defref};
       seen[id]=c; cand.push(c);
     }
   }
   const core=(parentTitle||"").replace(/(に関する法律|に関する政令|に関する省令|法律|に関する|等)$/,"").slice(0,6);
-  const score=(c)=>{ let s=0; const t=c.title||""; if(c.fromNum) s+=5; if(parentTitle&&t.indexOf(parentTitle)>=0) s+=4; else if(core&&t.indexOf(core)>=0) s+=3; if(/施行(令|規則|細則)/.test(t)) s+=2; if(/(内閣府令|省令|府令|規則)/.test(t)) s+=1; return s; };
+  const score=(c)=>{ let s=0; const t=c.title||""; if(c.enact) s+=7; else if(c.defref) s-=4; if(c.fromNum) s+=5; if(parentTitle&&t.indexOf(parentTitle)>=0) s+=4; else if(core&&t.indexOf(core)>=0) s+=3; if(/施行(令|規則|細則)/.test(t)) s+=2; if(/(内閣府令|省令|府令|規則)/.test(t)) s+=1; return s; };
   cand.sort((a,b)=>score(b)-score(a));
   const out=[]; let n=0; const CAP=100;
   for(const c of cand){
@@ -848,9 +853,10 @@ async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
     const ft=d.law_full_text;
     const ftStr=JSON.stringify(ft);
     const mentions=(parentNum && ftStr.indexOf(parentNum)>=0) || (parentTitle && ftStr.indexOf(parentTitle)>=0);
-    const strong = score(c)>=4;
-    if(!strong && !mentions && !isEnactedUnder(enactHeadText(ft), parentTitle, parentNum)) continue;
-    out.push({title:c.title, id:c.id, docType:c.docType, arts:treeToArticles(ft)});
+    const enactedUnder = isEnactedUnder(enactHeadText(ft), parentTitle, parentNum);
+    const strong = c.enact || score(c)>=4;
+    if(!strong && !mentions && !enactedUnder) continue;
+    out.push({title:c.title, id:c.id, docType:c.docType, impl:(c.enact||enactedUnder), arts:treeToArticles(ft)});
   }
   return out;
 }
@@ -901,7 +907,7 @@ async function run(){
       setStatus('<span class="spin"></span>'+esc(c.title)+' を取得中…');
       try{
         const arts=await loadArticles(c.id);
-        arts.forEach(a=>childArticles.push({law:c.title,docType:c.docType,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
+        arts.forEach(a=>childArticles.push({law:c.title,docType:c.docType,impl:true,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
         loaded.push(c.title);
       }catch(e){}
     }
@@ -910,7 +916,7 @@ async function run(){
       const deep=await deepDiscover(law.title, parentNum, haveIds,
         (i,tot,t)=>setStatus('<span class="spin"></span>府省令・他省庁令を確認中… ('+i+'/'+tot+') '+esc(t)));
       for(const r of deep){
-        r.arts.forEach(a=>childArticles.push({law:r.title,docType:r.docType,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
+        r.arts.forEach(a=>childArticles.push({law:r.title,docType:r.docType,impl:!!r.impl,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
         loaded.push(r.title);
       }
     }
