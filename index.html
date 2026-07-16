@@ -111,7 +111,7 @@
 
   footer.foot{margin-top:32px; padding-top:14px; border-top:1px solid var(--line); font-size:11.5px; color:var(--none); line-height:1.7}
   footer.foot b{color:var(--ink-soft)}
-  .filterbar{display:none; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0 2px}
+  .filterbar{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 12px}
   .filterbar .flabel2{font-size:12px; color:var(--ink-soft); font-weight:700; margin-right:2px}
   .chip{font-family:var(--sans); font-size:12.5px; border:1px solid var(--line-strong); background:var(--panel); color:var(--ink-soft); border-radius:999px; padding:4px 12px; cursor:pointer}
   .chip:hover{border-color:var(--ai)}
@@ -121,8 +121,8 @@
   .chip.none.on{background:var(--none); border-color:var(--none)}
   .tocwrap{margin:12px 0 4px; background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:4px 14px}
   .tocwrap summary{font-size:13px; font-weight:700; color:var(--ai); cursor:pointer; padding:8px 0; user-select:none}
-  .toc{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1px 14px; padding:4px 0 10px}
-  .toc .tocitem{display:flex; align-items:center; gap:7px; font-family:var(--serif); font-size:13.5px; color:var(--ink); text-decoration:none; padding:3px 5px; border-radius:6px; line-height:1.4}
+  .toc{display:flex; flex-direction:column; gap:1px}
+  .toc .tocitem{display:flex; align-items:center; gap:8px; font-family:var(--serif); font-size:13px; color:var(--ink); text-decoration:none; padding:5px 6px; border-radius:6px; line-height:1.35}
   .toc .tocitem:hover{background:var(--ai-tint); color:var(--ai-deep)}
   .tdot{width:9px; height:9px; border-radius:50%; flex:none; background:var(--line-strong)}
   .tdot.ok{background:var(--ok)} .tdot.warn{background:var(--warn)} .tdot.none{background:var(--none)} .tdot.plain{background:var(--line-strong)}
@@ -143,6 +143,19 @@
   .peek .pk-h.ref{color:var(--ai)}
   @keyframes flashbg{0%{background:var(--ai-tint)}100%{background:transparent}}
   .art.flash{animation:flashbg 1.4s ease-out}
+  .layout{ margin-top:12px }
+  .sidebar{ display:none }
+  .layout.has-toc .sidebar{ display:block; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 12px 8px; max-height:48vh; overflow:auto; margin-bottom:14px }
+  .readerwrap{ min-width:0 }
+  .searchbox{ margin-bottom:10px }
+  .searchbox input{ width:100%; box-sizing:border-box; font-family:var(--sans); font-size:13.5px; padding:8px 11px; border:1px solid var(--line-strong); border-radius:9px; background:#fff; color:var(--ink) }
+  .searchbox input:focus{ outline:none; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint) }
+  .searchbox .scount{ display:block; font-size:11px; color:var(--ink-soft); margin-top:5px }
+  mark.hit{ background:#FCE38A; color:inherit; border-radius:2px; padding:0 1px }
+  @media(min-width:860px){
+    .layout.has-toc{ display:grid; grid-template-columns:264px minmax(0,1fr); gap:24px; align-items:start }
+    .layout.has-toc .sidebar{ position:sticky; top:14px; max-height:calc(100vh - 28px); margin-bottom:0 }
+  }
 </style>
 </head>
 <body>
@@ -190,20 +203,25 @@
     </div>
   </div>
 
-  <div class="filterbar" id="filterbar" style="display:none">
-    <span class="flabel2">絞り込み</span>
-    <button class="chip on" data-f="all">すべて</button>
-    <button class="chip ok" data-f="ok">確定</button>
-    <button class="chip warn" data-f="warn">要確認</button>
-    <button class="chip none" data-f="none">未整備</button>
-  </div>
-  <details class="tocwrap" id="tocwrap" style="display:none">
-    <summary>目次（条文へジャンプ）</summary>
-    <nav class="toc" id="toc"></nav>
-  </details>
-
-  <div class="reader" id="reader">
-    <div class="empty">法令名を入れて「取得して解析」を押してください。</div>
+  <div class="layout" id="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="searchbox">
+        <input id="qsearch" type="search" placeholder="条文内を検索（例：漏えい）" autocomplete="off">
+        <span class="scount"><b id="viewcount">0</b> 条を表示</span>
+      </div>
+      <div class="filterbar" id="filterbar">
+        <button class="chip on" data-f="all">すべて</button>
+        <button class="chip ok" data-f="ok">確定</button>
+        <button class="chip warn" data-f="warn">要確認</button>
+        <button class="chip none" data-f="none">未整備</button>
+      </div>
+      <nav class="toc" id="toc"></nav>
+    </aside>
+    <main class="readerwrap">
+      <div class="reader" id="reader">
+        <div class="empty">法令名を入れて「取得して解析」を押してください。</div>
+      </div>
+    </main>
   </div>
 
   <details class="paste">
@@ -458,23 +476,45 @@ function analyzeCore(parentArts, childArticles, lawTitle){
   document.getElementById("summary").classList.toggle("show",total>0);
   document.getElementById("csv").style.display = total>0 ? "inline-block" : "none";
   document.getElementById("toc").innerHTML = toc.map(function(t){ return '<a href="#'+t.id+'" data-target="'+t.id+'" data-has-ok="'+(t.ok?1:0)+'" data-has-warn="'+(t.warn?1:0)+'" data-has-none="'+(t.none?1:0)+'" class="tocitem"><span class="tdot '+t.worst+'"></span>'+esc(t.label)+'</a>'; }).join("");
-  document.getElementById("tocwrap").style.display = toc.length ? "block" : "none";
-  document.getElementById("filterbar").style.display = total>0 ? "flex" : "none";
-  setFilter("all");
+  document.getElementById("layout").classList.toggle("has-toc", toc.length>0);
+  CURRENT_FILTER="all"; CURRENT_QUERY="";
+  var _qs=document.getElementById("qsearch"); if(_qs) _qs.value="";
+  applyView();
   applyTidy();
 }
 
 /* ---------- 目次・絞り込み ---------- */
-let CURRENT_FILTER="all";
-function setFilter(f){
-  CURRENT_FILTER=f;
-  const cap=f.charAt(0).toUpperCase()+f.slice(1);
-  document.querySelectorAll("#filterbar .chip").forEach(function(c){ c.classList.toggle("on", c.getAttribute("data-f")===f); });
-  document.querySelectorAll("#reader article.art").forEach(function(el){ el.style.display = (f==="all"||el.dataset["has"+cap]==="1")?"":"none"; });
-  document.querySelectorAll("#toc .tocitem").forEach(function(el){ el.style.display = (f==="all"||el.dataset["has"+cap]==="1")?"":"none"; });
+let CURRENT_FILTER="all", CURRENT_QUERY="";
+function capF(f){ return f.charAt(0).toUpperCase()+f.slice(1); }
+function clearMarks(root){ root.querySelectorAll("mark.hit").forEach(function(mk){ mk.replaceWith(document.createTextNode(mk.textContent)); }); root.normalize(); }
+function addMarks(root,q){
+  const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const hits=[]; let n;
+  while((n=w.nextNode())){ if(n.parentElement && n.parentElement.closest(".tag,.num")) continue; if(n.nodeValue.indexOf(q)>=0) hits.push(n); }
+  hits.forEach(function(node){ const parts=node.nodeValue.split(q); const frag=document.createDocumentFragment(); parts.forEach(function(p,i){ if(i>0){ const mk=document.createElement("mark"); mk.className="hit"; mk.textContent=q; frag.appendChild(mk); } if(p) frag.appendChild(document.createTextNode(p)); }); node.replaceWith(frag); });
 }
+function applyView(){
+  const f=CURRENT_FILTER, q=CURRENT_QUERY.trim(), cap=capF(f);
+  document.querySelectorAll("#filterbar .chip").forEach(function(c){ c.classList.toggle("on", c.getAttribute("data-f")===f); });
+  let shown=0;
+  document.querySelectorAll("#reader article.art").forEach(function(el){
+    const bodyEl=el.querySelector(".body")||el;
+    clearMarks(bodyEl);
+    const passStatus = f==="all" || el.dataset["has"+cap]==="1";
+    const passQ = !q || (el.textContent||"").indexOf(q)>=0;
+    const show = passStatus && passQ;
+    el.style.display = show?"":"none";
+    if(show){ shown++; if(q) addMarks(bodyEl,q); }
+  });
+  document.querySelectorAll("#toc .tocitem").forEach(function(li){
+    const art=document.getElementById(li.getAttribute("data-target"));
+    li.style.display = (art && art.style.display!=="none")?"":"none";
+  });
+  const vc=document.getElementById("viewcount"); if(vc) vc.textContent=shown;
+}
+function setFilter(f){ CURRENT_FILTER=f; applyView(); }
 document.getElementById("filterbar").addEventListener("click",function(e){ const c=e.target.closest(".chip"); if(c) setFilter(c.getAttribute("data-f")); });
 document.getElementById("toc").addEventListener("click",function(e){ const a=e.target.closest(".tocitem"); if(!a) return; e.preventDefault(); const el=document.getElementById(a.getAttribute("data-target")); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); });
+(function(){ var qs=document.getElementById("qsearch"); if(qs) qs.addEventListener("input",function(){ CURRENT_QUERY=qs.value; applyView(); }); })();
 
 /* ---------- 展開 ---------- */
 document.getElementById("reader").addEventListener("click",function(e){
