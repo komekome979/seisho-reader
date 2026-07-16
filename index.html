@@ -379,6 +379,12 @@
   .dietsel:focus{ border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint) }
   .dietlbl-sub{ font-weight:400; color:var(--none); font-size:10.5px; margin-left:7px }
 
+
+  .wrow-b{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:3px }
+  .wrow-b .wrow-m{ margin-top:0 }
+  .wrowdiet{ flex:none; appearance:none; -webkit-appearance:none; cursor:pointer; font-family:var(--sans); font-size:11px; font-weight:700; color:#5A3A86; background:#F1ECF8; border:1px solid #DBCDEE; border-radius:7px; padding:3px 9px; white-space:nowrap }
+  .wrowdiet:hover{ background:#E7DCF6; border-color:#9F7FCB }
+
 </style>
 </head>
 <body>
@@ -1336,11 +1342,13 @@ function switchView(v){
       past:   rows.filter(function(r){ return !((r.sched && !r.enf) || (r.enf && r.enf>t)); })
     };
   }
-  function fmtRow(r, isNew){
+  function dsig(r){ return r.amId ? ("id:"+r.amId) : ("k:"+(r.amNum||"")+"|"+(r.promu||"")+"|"+(r.enf||"")); }
+  function fmtRow(r, isNew, law){
     var when = r.enf ? ('施行 '+esc(r.enf)) : (r.sched ? ('施行予定 '+esc(r.sched)) : '');
     var t = r.amId ? ('<a href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(r.amId)+'" target="_blank" rel="noopener">'+esc(r.amLaw)+' ↗</a>') : esc(r.amLaw);
     var meta = (r.promu?'公布 '+esc(r.promu):'') + (when ? ((r.promu?' ／ ':'')+'<span class="enf">'+when+'</span>') : '');
-    return '<div class="wrow'+(isNew?' isnew':'')+'"><div class="wrow-t">'+t+(r.repeal?' <span class="histrepeal">［廃止］</span>':'')+'</div>'+(meta?'<div class="wrow-m">'+meta+'</div>':'')+'</div>';
+    var diet = (law && law.id) ? '<button class="wrowdiet" type="button" data-diet-id="'+esc(law.id)+'" data-diet-title="'+esc(law.title)+'" data-diet-sig="'+esc(dsig(r))+'" title="この改正の国会審議を見る">🏛 国会</button>' : '';
+    return '<div class="wrow'+(isNew?' isnew':'')+'"><div class="wrow-t">'+t+(r.repeal?' <span class="histrepeal">［廃止］</span>':'')+'</div><div class="wrow-b">'+(meta?'<span class="wrow-m">'+meta+'</span>':'<span></span>')+diet+'</div></div>';
   }
   function domTag(law){
     if(law.domains && law.domains.length){ var d=DOMAINS[law.domains[0]]; return '<span class="wtag">'+(d?esc(d.label):esc(law.domains[0]))+(law.domains.length>1?' ＋'+(law.domains.length-1):'')+'</span>'; }
@@ -1357,8 +1365,8 @@ function switchView(v){
     h+= s.future.length ? '<span class="wpill up">⚠ 未施行 '+s.future.length+'件</span>' : '<span class="wpill none">未施行なし</span>';
     if(hasNew) h+='<span class="wpill new">● 新着 '+newRows.length+'件</span>';
     h+='</div>';
-    if(s.future.length){ h+='<div class="wsec">未施行（公布済み・施行待ち）</div>'; s.future.forEach(function(r){ h+=fmtRow(r,isNewSig(r)); }); }
-    if(s.past.length){ h+='<div class="wsec">最近の改正</div>'; s.past.slice(0,3).forEach(function(r){ h+=fmtRow(r,isNewSig(r)); }); }
+    if(s.future.length){ h+='<div class="wsec">未施行（公布済み・施行待ち）</div>'; s.future.forEach(function(r){ h+=fmtRow(r,isNewSig(r),law); }); }
+    if(s.past.length){ h+='<div class="wsec">最近の改正</div>'; s.past.slice(0,3).forEach(function(r){ h+=fmtRow(r,isNewSig(r),law); }); }
     if(!s.future.length && !s.past.length){ h+='<div class="wrow"><div class="wrow-m">改正沿革を取得できませんでした。e-Govの原文でご確認ください。</div></div>'; }
     h+='<div class="wcard-f">';
     h+='<a class="wbtn" href="#" data-open="'+esc(law.title)+'">リーダーで開く</a>';
@@ -1459,7 +1467,7 @@ function switchView(v){
     var rm=e.target.closest("[data-rm]"); if(rm){ removeLaw(rm.getAttribute("data-rm")); return; }
     var sn=e.target.closest("[data-seen]"); if(sn){ markSeen(sn.getAttribute("data-seen")); return; }
     var hs=e.target.closest("[data-hist]"); if(hs){ openHistory(hs.getAttribute("data-hist")); return; }
-    var dt=e.target.closest("[data-diet-id]"); if(dt){ openDiet(dt.getAttribute("data-diet-id"), dt.getAttribute("data-diet-title")); return; }
+    var dt=e.target.closest("[data-diet-id]"); if(dt){ openDiet(dt.getAttribute("data-diet-id"), dt.getAttribute("data-diet-title"), dt.getAttribute("data-diet-sig")||""); return; }
     var op=e.target.closest("[data-open]"); if(op){ e.preventDefault(); switchView("reader"); document.getElementById("q").value=op.getAttribute("data-open"); run(); return; }
   });
   var ws=document.getElementById("watchsummary");
@@ -1486,18 +1494,25 @@ function switchView(v){
   function fmtDate(d){ return d.toISOString().slice(0,10); }
   function addDays(d,n){ var x=new Date(d.getTime()); x.setUTCDate(x.getUTCDate()+n); return x; }
 
+  function today(){ return new Date().toISOString().slice(0,10); }
+  function dsig(r){ return r.amId ? ("id:"+r.amId) : ("k:"+(r.amNum||"")+"|"+(r.promu||"")+"|"+(r.enf||"")); }
   function extractRevs(data){
     var list=(data&&(data.law_revisions||data.revisions||data.laws||data.items))||(Array.isArray(data)?data:[]);
     if(!list) return [];
-    var rows=list.map(function(it){ var ri=it.revision_info||it; return {
+    var t=today();
+    var rows=list.map(function(it){ var ri=it.revision_info||it; var o={
       amLaw: ri.amendment_law_title || ri.amendment_law_num || "（制定・その他）",
       amNum: ri.amendment_law_num || "",
       promu: ri.amendment_promulgate_date || "",
       enf:   ri.amendment_enforcement_date || "",
-      sched: ri.amendment_scheduled_enforcement_date || ""
-    }; });
-    var kd=function(r){ return r.promu||r.enf||r.sched||""; };
-    rows.sort(function(a,b){ return kd(b).localeCompare(kd(a)); });
+      sched: ri.amendment_scheduled_enforcement_date || "",
+      amId:  ri.amendment_law_id || ""
+    }; o.future = (o.sched && !o.enf) || (o.enf && o.enf>t); return o; });
+    rows.sort(function(a,b){
+      if(!!a.future!==!!b.future) return a.future?-1:1;
+      if(a.future){ var ea=a.enf||a.sched||"9999-99-99", eb=b.enf||b.sched||"9999-99-99"; return ea.localeCompare(eb); }
+      var ka=a.promu||a.enf||"", kb=b.promu||b.enf||""; return kb.localeCompare(ka);
+    });
     return rows;
   }
   function windowFor(rev){
@@ -1508,8 +1523,10 @@ function switchView(v){
   }
   function revLabel(rev){
     if(!rev) return "";
-    var d=rev.promu||rev.enf||"日付不明";
-    return d+" 公布 ・ "+(rev.amNum||"")+(rev.amLaw?(" "+rev.amLaw):"");
+    var mark = rev.future ? "⚠未施行 " : "";
+    var enf = rev.enf ? ("施行 "+rev.enf) : (rev.sched ? ("施行予定 "+rev.sched) : "施行日未定");
+    var pub = rev.promu ? ("公布 "+rev.promu) : "";
+    return mark + enf + (pub?(" ｜ "+pub):"") + (rev.amNum?(" ・ "+rev.amNum):"") + (rev.amLaw?(" "+rev.amLaw):"");
   }
   function currentSel(){
     var sel=el("dietrev"); var v=sel?sel.value:"__all__";
@@ -1578,20 +1595,21 @@ function switchView(v){
   function buildRevSelect(){
     var sel=el("dietrev"); if(!sel) return;
     var opts='<option value="__all__">全期間（改正を問わず）</option>';
-    REVS.forEach(function(r,i){ var lbl=revLabel(r); if(lbl.length>44) lbl=lbl.slice(0,44)+"…"; opts+='<option value="'+i+'">'+esc2(lbl)+'</option>'; });
+    REVS.forEach(function(r,i){ var lbl=revLabel(r); if(lbl.length>60) lbl=lbl.slice(0,60)+"…"; opts+='<option value="'+i+'">'+esc2(lbl)+'</option>'; });
     sel.innerHTML=opts;
     sel.value = REVS.length? "0" : "__all__";
   }
-  function openDiet(id, title){
+  function preselect(sig){ var sel=el("dietrev"); if(!sel) return; for(var i=0;i<REVS.length;i++){ if(dsig(REVS[i])===sig){ sel.value=String(i); return; } } }
+  function openDiet(id, title, sig){
     var ov=el("dietoverlay"), pn=el("dietpanel"), q=el("dietq"), bd=el("dietbody"), sel=el("dietrev");
     if(!ov||!pn) return;
-    CUR={id:id||"", title:title||""}; REVS=[];
+    CUR={id:id||"", title:title||""}; REVS=[]; var PRE=sig||"";
     if(q) q.value=defaultTerm(title);
     if(sel) sel.innerHTML='<option value="__all__">全期間（改正を問わず）</option>';
     ov.hidden=false; pn.hidden=false;
     if(bd) bd.innerHTML='<div class="dietsum"><span class="wspin"></span> 改正の一覧を取得中…</div>';
     if(!id){ buildRevSelect(); run(); return; }
-    apiRevisions(id).then(function(data){ REVS=extractRevs(data); buildRevSelect(); run(); })
+    apiRevisions(id).then(function(data){ REVS=extractRevs(data); buildRevSelect(); if(PRE) preselect(PRE); run(); })
       .catch(function(){ REVS=[]; buildRevSelect(); run(); });
   }
   function closeDiet(){ var ov=el("dietoverlay"), pn=el("dietpanel"); if(ov) ov.hidden=true; if(pn) pn.hidden=true; }
