@@ -339,7 +339,11 @@ function extractCitations(body, parentTitle){
         else toParent=nearest(m.index); }
     } else toParent=nearest(m.index);
     const _art=kanjiToInt(m[2]), _branch=m[3]?kanjiToInt(m[3]):null, _item=m[5]?kanjiToInt(m[5]):null;
-    if(m[4]==null){ out.push({ref,art:_art,branch:_branch,para:null,item:_item,index:m.index,text:m[0],toParent}); }
+    if(m[4]==null){
+      const _tailA=body.slice(m.index+m[0].length), _rng=_tailA.match(/^から第([〇零一二三四五六七八九十百千0-9]+)条まで/);
+      if(_rng && _branch==null){ const _to=kanjiToInt(_rng[1]); if(_to>_art && _to-_art<=60){ for(let _x=_art;_x<=_to;_x++) out.push({ref,art:_x,branch:null,para:null,item:null,index:m.index,text:m[0],toParent}); } else out.push({ref,art:_art,branch:_branch,para:null,item:_item,index:m.index,text:m[0],toParent}); }
+      else out.push({ref,art:_art,branch:_branch,para:null,item:_item,index:m.index,text:m[0],toParent});
+    }
     else{
       const NP="[〇零一二三四五六七八九十百千0-9]+";
       const oneRe=new RegExp("^(?:、|及び|並びに|又は|若しくは)第("+NP+")項");
@@ -481,11 +485,29 @@ function analyzeCore(parentArts, childArticles, lawTitle){
           if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!hit});
         }
         if(targets.some(t=>t.exact)) targets=targets.filter(t=>t.exact);
-        const status = targets.length ? "ok" : (blanket?"warn":"none");
+        let status, matches=targets, candidate=false;
+        if(targets.length){ status="ok"; }
+        else {
+          const cseen={}, cands=[];
+          for(const ca of childArticles){
+            if(!typeAllows(tt,ca.docType||"")) continue;
+            for(const c of ca.cites){
+              if(c.toParent && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
+                const ck=(ca.law||"")+"|"+(ca.numText||"");
+                if(!cseen[ck]){ cseen[ck]=1; cands.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:c.text,exact:false}); }
+              }
+            }
+          }
+          if(cands.length){ status="warn"; matches=cands; candidate=true; }
+          else if(blanket){ status="warn"; }
+          else { status="none"; }
+        }
         counts[status]++; flags[status]=true;
         const k="k"+(key++);
-        MATCHDATA[k]={status,tt,para:p,artNum:art.numText,caption:art.caption,deleg:d.text,matches:targets};
-        const tag = status==="ok" ? (targets.length>1?targets.length+"件":"確定") : (status==="warn"?"要確認":"未整備");
+        MATCHDATA[k]={status,tt,para:p,artNum:art.numText,caption:art.caption,deleg:d.text,matches:matches,candidate:candidate};
+        const tag = status==="ok" ? (targets.length>1?targets.length+"件":"確定")
+                  : status==="warn" ? (candidate ? (matches.length>1?"候補"+matches.length:"候補") : "要確認")
+                  : "未整備";
         bodyHtml+='<button class="dl '+status+'" data-k="'+k+'">'+esc(d.text)+'<span class="tag">'+tag+'</span></button>';
       }
       cursor=ins.end;
@@ -554,9 +576,13 @@ document.getElementById("reader").addEventListener("click",function(e){
   const art=btn.closest("article.art"), host=art.querySelector(".expandhost");
   const existing=host.querySelector('[data-for="'+k+'"]'); if(existing){ existing.remove(); return; }
   const box=document.createElement("div"); box.className="exp "+data.status; box.setAttribute("data-for",k);
-  const label = data.status==="ok"?"確定：受け皿の条文":(data.status==="warn"?"要確認：構造的に絞れない委任":"未整備：対応条文が見当たりません");
+  const cand = !!data.candidate;
+  const label = data.status==="ok" ? "確定：受け皿の条文"
+              : data.status==="warn" ? (cand ? "候補：同じ条を参照する政省令の規定（要確認）" : "要確認：構造的に絞れない委任")
+              : "未整備：対応条文が見当たりません";
   let inner='<div class="exhd">'+label+'<span style="margin-left:auto;font-family:var(--mono);font-weight:400;opacity:.75">'+esc(data.artNum)+'第'+data.para+'項の「'+esc(data.tt)+'」委任</span></div>';
-  if(data.status==="ok"){
+  if(cand){ inner+='<div class="reason"><span class="why">注意：</span>「'+esc(data.artNum)+'」を参照する政省令規定はありますが、項までの機械的一致は取れていません。下記が対象の項を含むか、必ず原文でご確認ください。</div>'; }
+  if(data.status==="ok" || cand){
     for(const t of data.matches){
       inner+='<div class="target"><span class="tnum">'+esc(t.numText)+'</span><span class="tlaw">'+esc(t.law)+'</span>';
       if(t.caption) inner+='<span class="tcap">（'+esc(t.caption)+'）</span>';
@@ -588,9 +614,9 @@ function buildCSV(){
   for(const k of Object.keys(MATCHDATA)){
     const d=MATCHDATA[k];
     if(d.matches&&d.matches.length){
-      for(const t of d.matches) rows.push([LAST_TITLE,d.artNum,d.caption,d.para,d.deleg,d.tt,label[d.status],t.law,t.numText,t.cite]);
+      for(const t of d.matches) rows.push([LAST_TITLE,d.artNum,d.caption,d.para,d.deleg,d.tt,(d.candidate?"候補":label[d.status]),t.law,t.numText,t.cite]);
     }else{
-      rows.push([LAST_TITLE,d.artNum,d.caption,d.para,d.deleg,d.tt,label[d.status],"","",""]);
+      rows.push([LAST_TITLE,d.artNum,d.caption,d.para,d.deleg,d.tt,(d.candidate?"候補":label[d.status]),"","",""]);
     }
   }
   return rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
@@ -768,7 +794,13 @@ function showPeek(b){
     });
     if(d.matches.length>2) html+='<div class="pk-more">ほか '+(d.matches.length-2)+' 件（クリックで全件表示）</div>';
   } else if(d.status==="warn"){
-    html='<div class="pk-h warn">要確認</div><div class="pk-r">包括委任や前項参照などで受け皿を一つに絞れません。クリックで詳細。</div>';
+    if(d.candidate){
+      html='<div class="pk-h warn">候補（要確認）</div>';
+      d.matches.slice(0,2).forEach(function(t){ const snip=(t.body||"").length>120?t.body.slice(0,120)+"…":(t.body||""); html+='<div class="pk-t"><span class="pk-num">'+esc(t.numText)+'</span><span class="pk-law">'+esc(t.law)+'</span>'+(t.caption?'<span class="pk-cap">（'+esc(t.caption)+'）</span>':'')+'<div class="pk-b">'+esc(snip)+'</div></div>'; });
+      html+='<div class="pk-more">同条を参照。項の一致は要確認（クリックで詳細）</div>';
+    } else {
+      html='<div class="pk-h warn">要確認</div><div class="pk-r">包括委任や前項参照などで受け皿を一つに絞れません。クリックで詳細。</div>';
+    }
   } else {
     html='<div class="pk-h none">未整備</div><div class="pk-r">対応する受け皿の条文が見つかりません。クリックで詳細。</div>';
   }
