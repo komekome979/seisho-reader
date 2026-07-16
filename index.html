@@ -349,6 +349,31 @@
   .watchtools{ margin-top:14px }
   .wtag{ display:inline-block; font-size:10.5px; font-weight:700; color:var(--ai-deep); background:var(--ai-tint); border:1px solid #CDDCF0; border-radius:5px; padding:1px 7px; margin-left:8px; vertical-align:2px }
 
+
+  /* ===== 国会での言及パネル ===== */
+  .lawlinks .dietbtn{ display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:600; color:#5A3A86; background:#F1ECF8; border:1px solid #DBCDEE; border-radius:9px; padding:5px 12px; text-decoration:none; cursor:pointer; font-family:inherit }
+  .lawlinks .dietbtn:hover{ background:#E7DCF6; border-color:#9F7FCB }
+  .dietctrl{ padding:12px 16px 14px; border-bottom:1px solid var(--line); background:var(--bg) }
+  .dietlbl{ display:block; font-size:11px; font-weight:700; color:var(--ink-soft); letter-spacing:.04em; margin-bottom:6px }
+  .dietrow{ display:flex; gap:8px }
+  #dietq{ flex:1; height:38px; border:1px solid var(--line-strong); border-radius:9px; padding:0 12px; font-family:var(--serif); font-size:15px; color:var(--ink); outline:none; background:var(--panel) }
+  #dietq:focus{ border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint) }
+  .dietgo{ appearance:none; -webkit-appearance:none; border:1px solid var(--ai); background:var(--ai); color:#fff; font-family:var(--sans); font-weight:700; font-size:13px; border-radius:9px; padding:0 16px; cursor:pointer }
+  .dietgo:hover{ background:var(--ai-deep) }
+  .dietchk{ display:flex; align-items:center; gap:7px; margin-top:10px; font-size:12px; color:var(--ink-soft) }
+  .dietsum{ font-size:11.5px; color:var(--none); padding:2px 2px 10px }
+  .drow{ padding:11px 2px 12px; border-bottom:1px dotted var(--line) }
+  .drow-meta{ display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; margin-bottom:4px }
+  .drow-date{ font-size:12px; font-weight:700; color:var(--ai-deep) }
+  .drow-mtg{ font-size:12px; color:var(--ink); font-weight:600 }
+  .drow-house{ font-size:10.5px; font-weight:700; color:var(--none); background:var(--none-tint); border:1px solid var(--none-line); border-radius:5px; padding:1px 6px }
+  .drow-spk{ font-size:12px; color:var(--ink-soft); margin-bottom:4px }
+  .drow-spk b{ color:var(--ink); font-weight:700 }
+  .drow-txt{ font-family:var(--serif); font-size:12.5px; line-height:1.7; color:var(--ink-soft); background:var(--bg); border-left:3px solid var(--line-strong); padding:7px 10px; border-radius:0 6px 6px 0 }
+  .drow-lnk{ display:inline-block; margin-top:6px; font-size:11.5px; color:var(--ai); text-decoration:none; border-bottom:1px dotted var(--ai) }
+  .dietegov{ display:inline-block; margin:2px 2px 12px; font-size:12px; font-weight:600; color:#5A3A86; text-decoration:none; border-bottom:1px dotted #9F7FCB }
+  .dietnote{ font-size:11px; color:var(--none); margin-top:14px; line-height:1.7; border-top:1px solid var(--line); padding-top:10px }
+
 </style>
 </head>
 <body>
@@ -486,6 +511,16 @@
   <aside id="histpanel" class="histpanel" hidden aria-label="改正履歴">
     <div class="histhead"><span>改正履歴</span><button id="histclose" class="histclose" type="button" aria-label="閉じる">×</button></div>
     <div id="histbody" class="histbody"></div>
+  </aside>
+  <div id="dietoverlay" class="histoverlay" hidden></div>
+  <aside id="dietpanel" class="histpanel" hidden aria-label="国会での言及">
+    <div class="histhead"><span>🏛 国会での言及（会議録）</span><button id="dietclose" class="histclose" type="button" aria-label="閉じる">×</button></div>
+    <div class="dietctrl">
+      <label class="dietlbl">検索語（会議録の発言に含まれる語）</label>
+      <div class="dietrow"><input id="dietq" type="text" autocomplete="off"><button id="dietgo" class="dietgo" type="button">検索</button></div>
+      <label class="dietchk"><input type="checkbox" id="dietcom" checked> 委員会に限定する（精度重視・本会議等を除く）</label>
+    </div>
+    <div id="dietbody" class="histbody"></div>
   </aside>
 <script>
 "use strict";
@@ -1085,7 +1120,7 @@ async function run(){
     }
 
     analyzeCore(parentArts, childArticles, law.title);
-    let llhtml = (parentNum?'<span class="lawnum">'+esc(parentNum)+'</span>':"")+'<button class="histbtn" type="button" data-lawid="'+esc(law.id)+'">改正履歴を見る</button>'+'<a class="histext" href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(law.id)+'" target="_blank" rel="noopener">e-Govで開く \u2197</a>';
+    let llhtml = (parentNum?'<span class="lawnum">'+esc(parentNum)+'</span>':"")+'<button class="histbtn" type="button" data-lawid="'+esc(law.id)+'">改正履歴を見る</button>'+'<button class="dietbtn" type="button" data-diet="'+esc(law.title)+'">🏛 国会での言及</button>'+'<a class="histext" href="https://laws.e-gov.go.jp/law/'+encodeURIComponent(law.id)+'" target="_blank" rel="noopener">e-Govで開く \u2197</a>';
     const noneCnt=parseInt((document.getElementById("t-none")||{}).textContent||"0",10);
     if(loaded.length) llhtml += ' ・ <span class="loadedtoggle">取得した政省令 '+loaded.length+'件 ▾</span><div class="loadedlist" hidden>'+loaded.map(esc).join("<br>")+'</div>';
     document.getElementById("lawlinks").innerHTML = llhtml;
@@ -1174,6 +1209,7 @@ async function openHistory(lawId){
 }
 function closeHistory(){ document.getElementById("histoverlay").hidden=true; document.getElementById("histpanel").hidden=true; }
 document.getElementById("lawlinks").addEventListener("click",function(e){ const b=e.target.closest(".histbtn"); if(!b) return; e.preventDefault(); openHistory(b.getAttribute("data-lawid")); });
+document.getElementById("lawlinks").addEventListener("click",function(e){ const b=e.target.closest(".dietbtn"); if(!b) return; e.preventDefault(); openDiet(b.getAttribute("data-diet")); });
 document.getElementById("lawlinks").addEventListener("click",function(e){ const t=e.target.closest(".loadedtoggle"); if(!t) return; const l=t.parentElement.querySelector(".loadedlist"); if(l) l.hidden=!l.hidden; });
 document.getElementById("histclose").addEventListener("click",closeHistory);
 document.getElementById("histoverlay").addEventListener("click",closeHistory);
@@ -1320,6 +1356,7 @@ function switchView(v){
     h+='<div class="wcard-f">';
     h+='<a class="wbtn" href="#" data-open="'+esc(law.title)+'">リーダーで開く</a>';
     h+='<button class="wbtn" type="button" data-hist="'+esc(law.id)+'">改正沿革をすべて見る</button>';
+    h+='<button class="wbtn" type="button" data-diet="'+esc(law.title)+'">🏛 国会での言及</button>';
     if(hasNew) h+='<button class="wbtn mark" type="button" data-seen="'+esc(law.id)+'">既読にする</button>';
     h+='</div></div>';
     return h;
@@ -1415,6 +1452,7 @@ function switchView(v){
     var rm=e.target.closest("[data-rm]"); if(rm){ removeLaw(rm.getAttribute("data-rm")); return; }
     var sn=e.target.closest("[data-seen]"); if(sn){ markSeen(sn.getAttribute("data-seen")); return; }
     var hs=e.target.closest("[data-hist]"); if(hs){ openHistory(hs.getAttribute("data-hist")); return; }
+    var dt=e.target.closest("[data-diet]"); if(dt){ openDiet(dt.getAttribute("data-diet")); return; }
     var op=e.target.closest("[data-open]"); if(op){ e.preventDefault(); switchView("reader"); document.getElementById("q").value=op.getAttribute("data-open"); run(); return; }
   });
   var ws=document.getElementById("watchsummary");
@@ -1424,6 +1462,92 @@ function switchView(v){
   window.__watchRender=function(){ renderChips(); renderAll(); };
 })();
 (function(){ var tabs=document.querySelectorAll(".tab"); for(var i=0;i<tabs.length;i++){ (function(t){ t.addEventListener("click",function(){ switchView(t.getAttribute("data-view")); }); })(tabs[i]); } })();
+
+
+/* ================= 国会での言及（国会会議録API / NDL） ================= */
+(function(){
+  var NDL="https://kokkai.ndl.go.jp/api/speech";
+  var SEARCH_UI="https://kokkai.ndl.go.jp/#/result?";
+  // 正式名称 -> 通称（発言では通称が使われがちなので既定の検索語に）
+  var REV={}; try{ if(typeof LAW_ALIAS==="object"){ Object.keys(LAW_ALIAS).forEach(function(k){ var v=LAW_ALIAS[k]; if(!(v in REV) || k.length<REV[v].length) REV[v]=k; }); } }catch(e){}
+  function esc2(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function el(id){ return document.getElementById(id); }
+  function defaultTerm(title){ return (title && REV[title]) ? REV[title] : (title||""); }
+  function uiLink(term, committee){
+    var q="any="+encodeURIComponent(term);
+    if(committee) q+="&nameOfMeeting="+encodeURIComponent("委員会");
+    return SEARCH_UI+q;
+  }
+  function speaker(r){
+    var s=esc2(r.speaker||"");
+    var extra=[]; if(r.speakerPosition) extra.push(esc2(r.speakerPosition)); if(r.speakerGroup) extra.push(esc2(r.speakerGroup));
+    return '<b>'+s+'</b>'+(extra.length?'（'+extra.join('／')+'）':'');
+  }
+  function snippet(t){ t=String(t||"").replace(/\s+/g," ").trim(); return t.length>180? esc2(t.slice(0,180))+"…" : esc2(t); }
+  function render(data, term, committee){
+    var recs=(data&&data.speechRecord)||[];
+    var total=(data&&data.numberOfRecords)||0;
+    var head='<a class="dietegov" href="'+uiLink(term,committee)+'" target="_blank" rel="noopener">国会会議録検索システムで全件見る ↗</a>';
+    if(!recs.length){
+      return head+'<div class="dietsum">「'+esc2(term)+'」'+(committee?'（委員会に限定）':'')+'に一致する発言は見つかりませんでした。</div>';
+    }
+    var h=head+'<div class="dietsum">「'+esc2(term)+'」を含む発言 '+total+'件中、新しい順に'+recs.length+'件を表示'+(committee?'（委員会に限定）':'')+'。</div>';
+    recs.forEach(function(r){
+      h+='<div class="drow"><div class="drow-meta"><span class="drow-date">'+esc2(r.date||"")+'</span>'
+        +'<span class="drow-house">'+esc2(r.nameOfHouse||"")+'</span>'
+        +'<span class="drow-mtg">'+esc2(r.nameOfMeeting||"")+(r.issue?' '+esc2(r.issue):'')+'</span></div>'
+        +'<div class="drow-spk">'+speaker(r)+'</div>'
+        +'<div class="drow-txt">'+snippet(r.speech)+'</div>'
+        +(r.speechURL?'<a class="drow-lnk" href="'+esc2(r.speechURL)+'" target="_blank" rel="noopener">この発言を会議録で読む ↗</a>':(r.meetingURL?'<a class="drow-lnk" href="'+esc2(r.meetingURL)+'" target="_blank" rel="noopener">会議録を読む ↗</a>':''))
+        +'</div>';
+    });
+    h+='<div class="dietnote">出典：国立国会図書館「国会会議録検索システム」検索用API。表示は発言の抜粋です。全文・正確な文脈は会議録原文でご確認ください。</div>';
+    return h;
+  }
+  function fetchSpeech(term, committee){
+    var url=NDL+"?any="+encodeURIComponent(term)+"&recordPacking=json&maximumRecords=20&searchRange=本文";
+    if(committee) url+="&nameOfMeeting="+encodeURIComponent("委員会");
+    return fetch(url).then(function(r){ if(!r.ok) throw new Error("会議録API "+r.status); return r.json(); });
+  }
+  function run(term, committee){
+    var bd=el("dietbody"); if(!bd) return;
+    term=(term||"").trim();
+    if(!term){ bd.innerHTML='<div class="dietsum">検索語を入力してください。</div>'; return; }
+    bd.innerHTML='<div class="dietsum"><span class="wspin"></span> 国会会議録を検索中…</div>';
+    fetchSpeech(term, committee).then(function(data){
+      var recs=(data&&data.speechRecord)||[];
+      if(!recs.length && committee){
+        // 委員会限定で0件 -> 限定を外して再検索
+        return fetchSpeech(term, false).then(function(d2){
+          var extra = (d2&&d2.speechRecord&&d2.speechRecord.length)? '<div class="dietsum" style="color:var(--warn)">委員会に限定した発言は無かったため、全体から表示しています。</div>' : '';
+          bd.innerHTML = extra + render(d2, term, false);
+        });
+      }
+      bd.innerHTML=render(data, term, committee);
+    }).catch(function(e){
+      bd.innerHTML='<div class="dietsum">この端末から国会会議録APIに直接アクセスできませんでした（'+esc2((e&&e.message)||e)+'）。<br>下のボタンから検索システムで開けます。</div>'
+        +'<a class="dietegov" href="'+uiLink(term,committee)+'" target="_blank" rel="noopener">国会会議録検索システムで「'+esc2(term)+'」を開く ↗</a>'
+        +'<div class="dietnote">※ ブラウザの制約（CORS）でページ内表示が塞がれている可能性があります。その場合は上のリンク先で確認できます（ページ内に取り込むには中継サーバーが必要）。</div>';
+    });
+  }
+  function openDiet(title){
+    var ov=el("dietoverlay"), pn=el("dietpanel"), q=el("dietq"), com=el("dietcom");
+    if(!ov||!pn) return;
+    var term=defaultTerm(title);
+    if(q) q.value=term;
+    ov.hidden=false; pn.hidden=false;
+    run(term, com?com.checked:true);
+  }
+  function closeDiet(){ var ov=el("dietoverlay"), pn=el("dietpanel"); if(ov) ov.hidden=true; if(pn) pn.hidden=true; }
+  window.openDiet=openDiet;
+
+  var dc=el("dietclose"); if(dc) dc.addEventListener("click",closeDiet);
+  var dov=el("dietoverlay"); if(dov) dov.addEventListener("click",closeDiet);
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeDiet(); });
+  var dg=el("dietgo"); if(dg) dg.addEventListener("click",function(){ run(el("dietq").value, el("dietcom").checked); });
+  var dq=el("dietq"); if(dq) dq.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); run(dq.value, el("dietcom").checked); } });
+  var dcom=el("dietcom"); if(dcom) dcom.addEventListener("change",function(){ run(el("dietq").value, dcom.checked); });
+})();
 
 </script>
 </body>
