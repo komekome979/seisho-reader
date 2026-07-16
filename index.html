@@ -385,6 +385,20 @@
   .wrowdiet{ flex:none; appearance:none; -webkit-appearance:none; cursor:pointer; font-family:var(--sans); font-size:11px; font-weight:700; color:#5A3A86; background:#F1ECF8; border:1px solid #DBCDEE; border-radius:7px; padding:3px 9px; white-space:nowrap }
   .wrowdiet:hover{ background:#E7DCF6; border-color:#9F7FCB }
 
+
+  /* ===== 新着トースト（委任先リーダー上に出す） ===== */
+  .watchtoast{ position:fixed; z-index:55; left:50%; bottom:20px; transform:translateX(-50%); width:min(460px,calc(100vw - 28px)); background:var(--panel); border:1px solid var(--accent); border-left:4px solid var(--accent); border-radius:12px; box-shadow:0 10px 34px rgba(20,30,45,.22); padding:12px 14px; display:flex; align-items:center; gap:11px }
+  .watchtoast[hidden]{ display:none }
+  .wt-ic{ font-size:20px; flex:none; line-height:1 }
+  .wt-tx{ flex:1; font-size:13px; color:var(--ink); line-height:1.5 }
+  .wt-tx b{ color:var(--warn) }
+  .wt-ac{ display:flex; align-items:center; gap:6px; flex:none }
+  .wt-go{ appearance:none; -webkit-appearance:none; border:1px solid var(--ai); background:var(--ai); color:#fff; font-family:var(--sans); font-weight:700; font-size:12px; border-radius:8px; padding:7px 12px; cursor:pointer; white-space:nowrap }
+  .wt-go:hover{ background:var(--ai-deep) }
+  .wt-x{ appearance:none; -webkit-appearance:none; border:0; background:transparent; color:var(--none); font-size:18px; cursor:pointer; line-height:1; padding:2px 5px }
+  .wt-x:hover{ color:var(--ink) }
+  @media(max-width:600px){ .watchtoast{ bottom:12px } }
+
 </style>
 </head>
 <body>
@@ -518,6 +532,7 @@
 </section>
 
   <div id="peek" class="peek" hidden></div>
+  <div id="watchtoast" class="watchtoast" hidden></div>
   <div id="histoverlay" class="histoverlay" hidden></div>
   <aside id="histpanel" class="histpanel" hidden aria-label="改正履歴">
     <div class="histhead"><span>改正履歴</span><button id="histclose" class="histclose" type="button" aria-label="閉じる">×</button></div>
@@ -1291,6 +1306,7 @@ function switchView(v){
   if(vr) vr.hidden=(v!=="reader");
   if(vw) vw.hidden=(v!=="watch");
   if(v==="watch" && window.__watchRender){ window.__watchRender(); }
+  if(window.__watchToastRefresh) window.__watchToastRefresh();
   window.scrollTo(0,0);
 }
 (function(){
@@ -1376,19 +1392,34 @@ function switchView(v){
     h+='</div></div>';
     return h;
   }
+  var LS_NEW="srw_bgnew_v1", NEW_TTL=2*3600*1000, toastDismissed=false;
+  function persistNew(laws, items){ save(LS_NEW, {laws:laws||0, items:items||0, at:Date.now()}); }
+  function getNew(){ return load(LS_NEW, null); }
+  function setBadge(k){ var t=document.getElementById("tabNew"); if(!t) return; if(k>0){ t.hidden=false; t.textContent=k; } else { t.hidden=true; } }
+  function onWatchView(){ var v=document.getElementById("view-watch"); return !!(v && !v.hidden); }
+  function refreshToast(){
+    var box=document.getElementById("watchtoast"); if(!box) return;
+    var st=getNew();
+    if(!st || !st.laws || st.laws<=0 || toastDismissed || onWatchView()){ box.hidden=true; return; }
+    box.innerHTML='<div class="wt-ic">🔔</div><div class="wt-tx">ウォッチ中の<b>'+st.laws+'件</b>の法令に、新しい改正（'+st.items+'件）があります。</div><div class="wt-ac"><button class="wt-go" type="button">改正ウォッチで見る</button><button class="wt-x" type="button" aria-label="閉じる">×</button></div>';
+    box.hidden=false;
+  }
+  function refreshBadgeAndToast(){ var st=getNew(); setBadge(st?st.laws:0); refreshToast(); }
+  window.__watchToastRefresh=refreshToast;
   function updateSummary(totalNew, lawsWithNew){
-    var el=document.getElementById("watchsummary"), tab=document.getElementById("tabNew"), n=getWatch().length;
-    if(!n){ el.hidden=true; if(tab) tab.hidden=true; return; }
-    el.hidden=false;
-    if(totalNew>0){
-      el.className="watchsummary";
-      el.innerHTML='<b>'+lawsWithNew+'件</b> の法令に、前回チェック以降の新しい動きがあります（新着 <b>'+totalNew+'件</b>）。<button class="wbtn mark" type="button" id="wallseen" style="margin-left:10px">すべて既読にする</button>';
-      if(tab){ tab.hidden=false; tab.textContent=lawsWithNew; }
-    }else{
-      el.className="watchsummary calm";
-      el.innerHTML='ウォッチ中 <b>'+n+'件</b>。前回チェック以降の新しい動きはありません（未施行の改正は各カードで確認できます）。';
-      if(tab) tab.hidden=true;
+    var el=document.getElementById("watchsummary"), n=getWatch().length;
+    if(!n){ if(el) el.hidden=true; persistNew(0,0); refreshBadgeAndToast(); return; }
+    if(el){
+      el.hidden=false;
+      if(totalNew>0){
+        el.className="watchsummary";
+        el.innerHTML='<b>'+lawsWithNew+'件</b> の法令に、前回チェック以降の新しい動きがあります（新着 <b>'+totalNew+'件</b>）。<button class="wbtn mark" type="button" id="wallseen" style="margin-left:10px">すべて既読にする</button>';
+      }else{
+        el.className="watchsummary calm";
+        el.innerHTML='ウォッチ中 <b>'+n+'件</b>。前回チェック以降の新しい動きはありません（未施行の改正は各カードで確認できます）。';
+      }
     }
+    persistNew(lawsWithNew, totalNew); refreshBadgeAndToast();
   }
   function renderChips(){
     var host=document.getElementById("wdchips"); if(!host) return;
@@ -1475,6 +1506,17 @@ function switchView(v){
     if(e.target && e.target.id==="wallseen"){ var seen=getSeen(); getWatch().forEach(function(l){ seen[l.id]=(CACHE[l.id]||[]).map(sig); }); setSeen(seen); renderAll(); }
   });
   window.__watchRender=function(){ renderChips(); renderAll(); };
+  (function(){
+    var box=document.getElementById("watchtoast");
+    if(box) box.addEventListener("click",function(e){
+      if(e.target.closest(".wt-go")){ toastDismissed=true; box.hidden=true; if(typeof switchView==="function") switchView("watch"); return; }
+      if(e.target.closest(".wt-x")){ toastDismissed=true; box.hidden=true; return; }
+    });
+    refreshBadgeAndToast();
+    var w=getWatch(); if(!w.length) return;
+    var st=getNew(); var stale=!st || (Date.now()-(st.at||0) > NEW_TTL);
+    if(stale) setTimeout(function(){ renderAll(); }, 700);
+  })();
 })();
 (function(){ var tabs=document.querySelectorAll(".tab"); for(var i=0;i<tabs.length;i++){ (function(t){ t.addEventListener("click",function(){ switchView(t.getAttribute("data-view")); }); })(tabs[i]); } })();
 
