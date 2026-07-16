@@ -111,6 +111,38 @@
 
   footer.foot{margin-top:32px; padding-top:14px; border-top:1px solid var(--line); font-size:11.5px; color:var(--none); line-height:1.7}
   footer.foot b{color:var(--ink-soft)}
+  .filterbar{display:none; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0 2px}
+  .filterbar .flabel2{font-size:12px; color:var(--ink-soft); font-weight:700; margin-right:2px}
+  .chip{font-family:var(--sans); font-size:12.5px; border:1px solid var(--line-strong); background:var(--panel); color:var(--ink-soft); border-radius:999px; padding:4px 12px; cursor:pointer}
+  .chip:hover{border-color:var(--ai)}
+  .chip.on{background:var(--ai); color:#fff; border-color:var(--ai)}
+  .chip.ok.on{background:var(--ok); border-color:var(--ok)}
+  .chip.warn.on{background:var(--warn); border-color:var(--warn)}
+  .chip.none.on{background:var(--none); border-color:var(--none)}
+  .tocwrap{margin:12px 0 4px; background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:4px 14px}
+  .tocwrap summary{font-size:13px; font-weight:700; color:var(--ai); cursor:pointer; padding:8px 0; user-select:none}
+  .toc{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1px 14px; padding:4px 0 10px}
+  .toc .tocitem{display:flex; align-items:center; gap:7px; font-family:var(--serif); font-size:13.5px; color:var(--ink); text-decoration:none; padding:3px 5px; border-radius:6px; line-height:1.4}
+  .toc .tocitem:hover{background:var(--ai-tint); color:var(--ai-deep)}
+  .tdot{width:9px; height:9px; border-radius:50%; flex:none; background:var(--line-strong)}
+  .tdot.ok{background:var(--ok)} .tdot.warn{background:var(--warn)} .tdot.none{background:var(--none)} .tdot.plain{background:var(--line-strong)}
+  .peek{position:fixed; z-index:50; max-width:360px; background:#fff; border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 8px 28px rgba(20,30,45,.18); padding:10px 12px; font-family:var(--sans); pointer-events:none}
+  .peek[hidden]{display:none}
+  .peek .pk-h{font-size:11px; font-weight:700; letter-spacing:.04em; margin-bottom:6px}
+  .peek .pk-h.ok{color:var(--ok)} .peek .pk-h.warn{color:var(--warn)} .peek .pk-h.none{color:var(--none)}
+  .peek .pk-t{padding:5px 0; border-top:1px dashed var(--line)}
+  .peek .pk-t:first-of-type{border-top:none}
+  .peek .pk-num{font-family:var(--serif); font-weight:700; font-size:13px; color:var(--ai-deep)}
+  .peek .pk-law{font-size:10.5px; color:var(--none); margin-left:6px}
+  .peek .pk-cap{font-size:10.5px; color:var(--ai); font-weight:700; margin-left:6px}
+  .peek .pk-b{font-family:var(--serif); font-size:12.5px; line-height:1.65; margin-top:3px; color:var(--ink)}
+  .peek .pk-r{font-size:12px; color:var(--ink-soft); line-height:1.6}
+  .peek .pk-more{font-size:11px; color:var(--none); margin-top:4px}
+  .xref{color:var(--ai-deep); border-bottom:1px dotted var(--ai); cursor:pointer; text-decoration:none}
+  .xref:hover{background:var(--ai-tint)}
+  .peek .pk-h.ref{color:var(--ai)}
+  @keyframes flashbg{0%{background:var(--ai-tint)}100%{background:transparent}}
+  .art.flash{animation:flashbg 1.4s ease-out}
 </style>
 </head>
 <body>
@@ -158,6 +190,18 @@
     </div>
   </div>
 
+  <div class="filterbar" id="filterbar" style="display:none">
+    <span class="flabel2">絞り込み</span>
+    <button class="chip on" data-f="all">すべて</button>
+    <button class="chip ok" data-f="ok">確定</button>
+    <button class="chip warn" data-f="warn">要確認</button>
+    <button class="chip none" data-f="none">未整備</button>
+  </div>
+  <details class="tocwrap" id="tocwrap" style="display:none">
+    <summary>目次（条文へジャンプ）</summary>
+    <nav class="toc" id="toc"></nav>
+  </details>
+
   <div class="reader" id="reader">
     <div class="empty">法令名を入れて「取得して解析」を押してください。</div>
   </div>
@@ -181,6 +225,7 @@
   </footer>
 </div>
 
+  <div id="peek" class="peek" hidden></div>
 <script>
 "use strict";
 const API = "https://laws.e-gov.go.jp/api/2";
@@ -257,7 +302,7 @@ function extractCitations(body, parentTitle){
         else if(LAWTAIL.test(name)) toParent=false;
         else toParent=nearest(m.index); }
     } else toParent=nearest(m.index);
-    out.push({ref,art:kanjiToInt(m[2]),branch:m[3]?kanjiToInt(m[3]):null,para:m[4]?kanjiToInt(m[4]):null,item:m[5]?kanjiToInt(m[5]):null,text:m[0],toParent});
+    out.push({ref,art:kanjiToInt(m[2]),branch:m[3]?kanjiToInt(m[3]):null,para:m[4]?kanjiToInt(m[4]):null,item:m[5]?kanjiToInt(m[5]):null,index:m.index,text:m[0],toParent});
   }
   return out;
 }
@@ -339,48 +384,70 @@ function splitChildSegments(text){
 /* ---------- 解析コア ---------- */
 let MATCHDATA={};
 let LAST_TITLE="";
+let ARTINFO={};
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 function analyzeCore(parentArts, childArticles, lawTitle){
   MATCHDATA={}; LAST_TITLE=lawTitle||"";
   const reader=document.getElementById("reader");
   if(!parentArts.length){ reader.innerHTML='<div class="empty">条文が取得・抽出できませんでした。</div>'; document.getElementById("summary").classList.remove("show"); return; }
-  let counts={ok:0,warn:0,none:0}, html="", key=0;
+  let counts={ok:0,warn:0,none:0}, html="", key=0, toc=[];
+  ARTINFO={}; const artMap={};
+  parentArts.forEach(function(a,i){ a.__aid="art-"+i; if(a.num!=null){ const kk=a.num+(a.branch!=null?"_"+a.branch:""); artMap[kk]=a.__aid; if(!(String(a.num) in artMap)) artMap[String(a.num)]=a.__aid; } });
   if(lawTitle) html+='<div class="lawhead">'+esc(lawTitle)+'</div>';
 
   for(const art of parentArts){
-    const body=art.body||""; const dels=[]; let m; DELEG_RE.lastIndex=0;
-    while((m=DELEG_RE.exec(body))!==null){ dels.push({start:m.index,end:DELEG_RE.lastIndex,text:m[0]}); }
-    let bodyHtml="", cursor=0;
-    for(const d of dels){
-      bodyHtml+=esc(body.slice(cursor,d.start));
-      const p=paraAt(body,d.start), tt=targetType(d.text), blanket=isBlanket(sentenceAround(body,d.start));
-      let targets=[];
-      for(const ca of childArticles){
-        if(!typeAllows(tt,ca.docType||"")) continue;
-        let hit=null,loose=null;
-        for(const c of ca.cites){
-          if(c.toParent && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
-            if(c.para===p) hit=c; else if(c.para==null && !loose) loose=c;
+    const aid=art.__aid;
+    const body=art.body||"";
+    ARTINFO[aid]={numText:art.numText,caption:art.caption,body:body};
+    const inserts=[]; let m; DELEG_RE.lastIndex=0;
+    while((m=DELEG_RE.exec(body))!==null){ inserts.push({start:m.index,end:DELEG_RE.lastIndex,kind:"del",text:m[0]}); }
+    const pcites=extractCitations(body, lawTitle||"");
+    for(const c of pcites){
+      if(!c.toParent) continue;
+      if(c.art===art.num && ((c.branch==null&&art.branch==null)||c.branch===art.branch)) continue;
+      const xaid=artMap[c.art+(c.branch!=null?"_"+c.branch:"")]||artMap[String(c.art)];
+      if(!xaid) continue;
+      inserts.push({start:c.index,end:c.index+c.text.length,kind:"xref",text:c.text,aid:xaid});
+    }
+    inserts.sort(function(a,b){ return a.start-b.start || (a.kind==="del"?-1:1); });
+    let bodyHtml="", cursor=0; const flags={ok:false,warn:false,none:false};
+    for(const ins of inserts){
+      if(ins.start<cursor) continue;
+      bodyHtml+=esc(body.slice(cursor,ins.start));
+      if(ins.kind==="xref"){
+        bodyHtml+='<span class="xref" data-target="'+ins.aid+'">'+esc(ins.text)+'</span>';
+      } else {
+        const d=ins, p=paraAt(body,d.start), tt=targetType(d.text), blanket=isBlanket(sentenceAround(body,d.start));
+        let targets=[];
+        for(const ca of childArticles){
+          if(!typeAllows(tt,ca.docType||"")) continue;
+          let hit=null,loose=null;
+          for(const c of ca.cites){
+            if(c.toParent && c.art===art.num && ((art.branch==null&&c.branch==null)||c.branch===art.branch)){
+              if(c.para===p) hit=c; else if(c.para==null && !loose) loose=c;
+            }
           }
+          const use=hit||loose;
+          if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!hit});
         }
-        const use=hit||loose;
-        if(use) targets.push({law:ca.law,numText:ca.numText,caption:ca.caption,body:ca.body,cite:use.text,exact:!!hit});
+        if(targets.some(t=>t.exact)) targets=targets.filter(t=>t.exact);
+        const status = targets.length ? "ok" : (blanket?"warn":"none");
+        counts[status]++; flags[status]=true;
+        const k="k"+(key++);
+        MATCHDATA[k]={status,tt,para:p,artNum:art.numText,caption:art.caption,deleg:d.text,matches:targets};
+        const tag = status==="ok" ? (targets.length>1?targets.length+"件":"確定") : (status==="warn"?"要確認":"未整備");
+        bodyHtml+='<button class="dl '+status+'" data-k="'+k+'">'+esc(d.text)+'<span class="tag">▸'+tag+'</span></button>';
       }
-      if(targets.some(t=>t.exact)) targets=targets.filter(t=>t.exact);
-      const status = targets.length ? "ok" : (blanket?"warn":"none");
-      counts[status]++;
-      const k="k"+(key++);
-      MATCHDATA[k]={status,tt,para:p,artNum:art.numText,caption:art.caption,deleg:d.text,matches:targets};
-      const tag = status==="ok" ? (targets.length>1?targets.length+"件":"確定") : (status==="warn"?"要確認":"未整備");
-      bodyHtml+='<button class="dl '+status+'" data-k="'+k+'">'+esc(d.text)+'<span class="tag">▸'+tag+'</span></button>';
-      cursor=d.end;
+      cursor=ins.end;
     }
     bodyHtml+=esc(body.slice(cursor));
-    html+='<article class="art">';
+    const worst = flags.none?"none":(flags.warn?"warn":(flags.ok?"ok":"plain"));
+    html+='<article class="art" id="'+aid+'" data-status="'+worst+'" data-has-ok="'+(flags.ok?1:0)+'" data-has-warn="'+(flags.warn?1:0)+'" data-has-none="'+(flags.none?1:0)+'">';
     if(art.caption) html+='<div class="cap">（'+esc(art.caption)+'）</div>';
     html+='<div class="body"><span class="num" data-arabic="第'+(art.num!=null?art.num:"")+'条'+(art.branch!=null?"の"+art.branch:"")+'">'+esc(art.numText)+'</span>'+bodyHtml+'</div>';
     html+='<div class="expandhost"></div></article>';
+    toc.push({id:aid, label:art.numText+(art.caption?"（"+art.caption+"）":""), worst:worst, ok:flags.ok, warn:flags.warn, none:flags.none});
   }
   reader.innerHTML=html || '<div class="empty">条文が見つかりませんでした。</div>';
   const total=counts.ok+counts.warn+counts.none;
@@ -390,8 +457,24 @@ function analyzeCore(parentArts, childArticles, lawTitle){
   document.getElementById("t-none").textContent=counts.none;
   document.getElementById("summary").classList.toggle("show",total>0);
   document.getElementById("csv").style.display = total>0 ? "inline-block" : "none";
+  document.getElementById("toc").innerHTML = toc.map(function(t){ return '<a href="#'+t.id+'" data-target="'+t.id+'" data-has-ok="'+(t.ok?1:0)+'" data-has-warn="'+(t.warn?1:0)+'" data-has-none="'+(t.none?1:0)+'" class="tocitem"><span class="tdot '+t.worst+'"></span>'+esc(t.label)+'</a>'; }).join("");
+  document.getElementById("tocwrap").style.display = toc.length ? "block" : "none";
+  document.getElementById("filterbar").style.display = total>0 ? "flex" : "none";
+  setFilter("all");
   applyTidy();
 }
+
+/* ---------- 目次・絞り込み ---------- */
+let CURRENT_FILTER="all";
+function setFilter(f){
+  CURRENT_FILTER=f;
+  const cap=f.charAt(0).toUpperCase()+f.slice(1);
+  document.querySelectorAll("#filterbar .chip").forEach(function(c){ c.classList.toggle("on", c.getAttribute("data-f")===f); });
+  document.querySelectorAll("#reader article.art").forEach(function(el){ el.style.display = (f==="all"||el.dataset["has"+cap]==="1")?"":"none"; });
+  document.querySelectorAll("#toc .tocitem").forEach(function(el){ el.style.display = (f==="all"||el.dataset["has"+cap]==="1")?"":"none"; });
+}
+document.getElementById("filterbar").addEventListener("click",function(e){ const c=e.target.closest(".chip"); if(c) setFilter(c.getAttribute("data-f")); });
+document.getElementById("toc").addEventListener("click",function(e){ const a=e.target.closest(".tocitem"); if(!a) return; e.preventDefault(); const el=document.getElementById(a.getAttribute("data-target")); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); });
 
 /* ---------- 展開 ---------- */
 document.getElementById("reader").addEventListener("click",function(e){
@@ -600,6 +683,54 @@ async function run(){
 document.getElementById("go").addEventListener("click",run);
 document.getElementById("q").addEventListener("keydown",e=>{ if(e.key==="Enter") run(); });
 document.querySelectorAll(".examples b").forEach(b=>b.addEventListener("click",()=>{ document.getElementById("q").value=b.getAttribute("data-ex"); run(); }));
+
+
+/* ---------- ホバー・プレビュー ---------- */
+function showPeek(b){
+  const d=MATCHDATA[b.getAttribute("data-k")]; if(!d) return;
+  let html="";
+  if(d.status==="ok"){
+    html='<div class="pk-h ok">確定：受け皿の条文</div>';
+    d.matches.slice(0,2).forEach(function(t){
+      const snip=(t.body||"").length>140?t.body.slice(0,140)+"…":(t.body||"");
+      html+='<div class="pk-t"><span class="pk-num">'+esc(t.numText)+'</span><span class="pk-law">'+esc(t.law)+'</span>'+(t.caption?'<span class="pk-cap">（'+esc(t.caption)+'）</span>':'')+'<div class="pk-b">'+esc(snip)+'</div></div>';
+    });
+    if(d.matches.length>2) html+='<div class="pk-more">ほか '+(d.matches.length-2)+' 件（クリックで全件表示）</div>';
+  } else if(d.status==="warn"){
+    html='<div class="pk-h warn">要確認</div><div class="pk-r">包括委任や前項参照などで受け皿を一つに絞れません。クリックで詳細。</div>';
+  } else {
+    html='<div class="pk-h none">未整備</div><div class="pk-r">対応する受け皿の条文が見つかりません。クリックで詳細。</div>';
+  }
+  const pk=document.getElementById("peek");
+  pk.innerHTML=html; pk.hidden=false;
+  const pw=Math.min(360, window.innerWidth-24); pk.style.width=pw+"px";
+  const r=b.getBoundingClientRect();
+  const left=Math.min(Math.max(12, r.left), window.innerWidth-pw-12);
+  pk.style.left=left+"px"; pk.style.top=(r.bottom+8)+"px";
+  const ph=pk.offsetHeight;
+  if(r.bottom+8+ph > window.innerHeight-12){ let top=r.top-ph-8; if(top<12) top=12; pk.style.top=top+"px"; }
+}
+function hidePeek(){ const pk=document.getElementById("peek"); if(pk) pk.hidden=true; }
+function showXrefPeek(x){
+  const a=ARTINFO[x.getAttribute("data-target")]; if(!a) return;
+  const snip=(a.body||"").length>170?a.body.slice(0,170)+"…":(a.body||"");
+  const html='<div class="pk-h ref">参照先（クリックで移動）</div><div class="pk-t"><span class="pk-num">'+esc(a.numText)+'</span>'+(a.caption?'<span class="pk-cap">（'+esc(a.caption)+'）</span>':'')+'<div class="pk-b">'+esc(snip)+'</div></div>';
+  const pk=document.getElementById("peek"); pk.innerHTML=html; pk.hidden=false;
+  const pw=Math.min(360, window.innerWidth-24); pk.style.width=pw+"px";
+  const r=x.getBoundingClientRect();
+  const left=Math.min(Math.max(12,r.left), window.innerWidth-pw-12);
+  pk.style.left=left+"px"; pk.style.top=(r.bottom+8)+"px";
+  const ph=pk.offsetHeight;
+  if(r.bottom+8+ph>window.innerHeight-12){ let top=r.top-ph-8; if(top<12) top=12; pk.style.top=top+"px"; }
+}
+(function(){
+  const rd=document.getElementById("reader");
+  rd.addEventListener("click",function(e){ const x=e.target.closest(".xref"); if(!x) return; const el=document.getElementById(x.getAttribute("data-target")); if(el){ hidePeek(); el.scrollIntoView({behavior:"smooth",block:"start"}); el.classList.add("flash"); setTimeout(function(){ el.classList.remove("flash"); },1400); } });
+  if(!(window.matchMedia && window.matchMedia("(hover: hover)").matches)) return;
+  rd.addEventListener("mouseover",function(e){ const b=e.target.closest(".dl"); if(b){ showPeek(b); return; } const x=e.target.closest(".xref"); if(x) showXrefPeek(x); });
+  rd.addEventListener("mouseout",function(e){ if(e.target.closest(".dl")||e.target.closest(".xref")) hidePeek(); });
+  window.addEventListener("scroll",hidePeek,true);
+})();
 
 /* ---------- 貼り付けモード ---------- */
 function runPaste(){
