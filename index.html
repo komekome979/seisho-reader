@@ -12,6 +12,7 @@
     --bg:#F4F6F8; --panel:#FFFFFF; --ink:#1B2530; --ink-soft:#54606D;
     --line:#E2E7ED; --line-strong:#CDD5DE;
     --ai:#294C7C; --ai-deep:#1E3A63; --ai-tint:#EAF0F8;
+    --accent:#B5843C; --accent-tint:#F6EEDF;
     --ok:#0E7A6B; --ok-tint:#E4F3F0; --ok-line:#B7DED6;
     --warn:#A9640A; --warn-tint:#FAF0DC; --warn-line:#EAD3A3;
     --none:#6B7684; --none-tint:#EDF0F3; --none-line:#D6DBE1;
@@ -22,12 +23,12 @@
   *{box-sizing:border-box}
   html,body{margin:0}
   body{background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.7; -webkit-font-smoothing:antialiased; font-size:15px}
-  .wrap{max-width:1120px; margin:0 auto; padding:26px 20px 80px}
+  .wrap{max-width:1300px; margin:0 auto; padding:22px 28px 90px}
 
-  header.mast{border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:18px}
-  .mast .kicker{font-size:11px; letter-spacing:.28em; color:var(--ai); font-weight:700}
-  .mast h1{font-family:var(--serif); font-weight:700; font-size:29px; letter-spacing:.02em; margin:6px 0 4px}
-  .mast p.sub{margin:0; color:var(--ink-soft); font-size:13.5px; max-width:72ch}
+  header.mast{padding:20px 0 16px; margin-bottom:18px; border-bottom:1px solid var(--line)}
+  .mast h1{font-family:var(--serif); font-weight:700; font-size:27px; letter-spacing:.02em; margin:0 0 6px; color:var(--ink); position:relative; padding-bottom:10px}
+  .mast h1:after{content:""; position:absolute; left:0; bottom:0; width:46px; height:3px; background:var(--accent); border-radius:2px}
+  .mast p.sub{margin:0; color:var(--ink-soft); font-size:13.5px; max-width:80ch}
   .src{margin-top:8px; font-size:11.5px; color:var(--none); font-family:var(--mono)}
   .src a{color:var(--ai); text-decoration:none; border-bottom:1px dotted var(--ai)}
 
@@ -45,8 +46,10 @@
   .btn.primary:disabled{opacity:.5; cursor:default}
   .btn.ghost{background:transparent; color:var(--ai); border-color:var(--line-strong); height:38px; padding:0 14px; font-size:13px}
   .btn.ghost:hover{border-color:var(--ai); background:var(--ai-tint)}
-  .examples{font-size:12px; color:var(--none); margin:4px 2px 0}
-  .examples b{color:var(--ai); cursor:pointer; font-weight:600; border-bottom:1px dotted var(--ai)}
+  .examples{font-size:12px; color:var(--ink-soft); margin:12px 2px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .examples .exlabel{color:var(--none); font-size:11.5px; letter-spacing:.06em}
+  .examples b{display:inline-block; color:var(--ai-deep); cursor:pointer; font-weight:700; font-size:12.5px; background:var(--panel); border:1px solid var(--line-strong); border-radius:999px; padding:4px 13px; transition:all .12s}
+  .examples b:hover{border-color:var(--accent); background:var(--accent-tint)}
 
   details.adv{margin:10px 0 0}
   details.adv summary{font-size:12.5px; color:var(--ai); cursor:pointer; user-select:none}
@@ -73,7 +76,7 @@
 
   .reader{margin-top:6px}
   .lawhead{font-family:var(--serif); font-weight:700; font-size:16px; color:var(--ai-deep); border-left:4px solid var(--ai); padding:2px 0 2px 12px; margin:18px 0 12px}
-  article.art{background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:15px 18px; margin:10px 0}
+  article.art{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 22px; margin:12px 0; box-shadow:0 1px 2px rgba(20,30,45,.04)}
   .art .cap{font-family:var(--sans); font-size:12px; font-weight:700; color:var(--ai); letter-spacing:.04em}
   .art .body{font-family:var(--serif); font-size:15.5px; line-height:1.95; margin-top:3px; white-space:pre-wrap; word-break:normal}
   body.tidy .art .body{line-height:2.1}
@@ -156,12 +159,19 @@
     .layout.has-toc{ display:grid; grid-template-columns:264px minmax(0,1fr); gap:24px; align-items:start }
     .layout.has-toc .sidebar{ position:sticky; top:14px; max-height:calc(100vh - 28px); margin-bottom:0 }
   }
+  .topbar{ background:var(--ai-deep); border-bottom:3px solid var(--accent) }
+  .topbar-in{ max-width:1300px; margin:0 auto; padding:11px 28px; display:flex; align-items:baseline; gap:12px }
+  .brand{ font-family:var(--serif); font-weight:700; font-size:16px; color:#fff; letter-spacing:.05em }
+  .brand-sub{ font-size:11px; color:#9FB2CE; letter-spacing:.1em }
+  .side-h{ font-size:11px; font-weight:700; letter-spacing:.14em; color:var(--ai); margin:2px 2px 8px }
+  @media(max-width:600px){ .topbar-in{ padding:10px 16px } .wrap{ padding-left:16px; padding-right:16px } }
 </style>
 </head>
 <body>
+<div class="topbar"><div class="topbar-in"><span class="brand">政省令リーダー</span><span class="brand-sub">委任先を、原文で確かめる</span></div></div>
+
 <div class="wrap">
   <header class="mast">
-    <div class="kicker">委任先リーダー・オンライン版</div>
     <h1>政省令リーダー</h1>
     <p class="sub">法令名を入れると、e-Gov法令APIから本文・施行令・施行規則を取得し、「政令で定める」「省令で定める」をクリックで受け皿条文に飛べる形にします。子法令側の「法第◯条…の規定により」という根拠条項で紐付け、確定／要確認／未整備の3段階で表示します。</p>
     <div class="src">出典: <a href="https://laws.e-gov.go.jp/" target="_blank" rel="noopener">e-Gov法令検索</a>（デジタル庁・政府標準利用規約2.0）。最終確認は必ずe-Govの原文で。</div>
@@ -176,7 +186,7 @@
     </div>
     <button class="btn primary" id="go">取得して解析</button>
   </div>
-  <div class="examples">例：<b data-ex="大気汚染防止法">大気汚染防止法</b>／<b data-ex="宅地建物取引業法">宅地建物取引業法</b>／<b data-ex="水質汚濁防止法">水質汚濁防止法</b>／<b data-ex="343AC0000000097">法令ID直接指定</b></div>
+  <div class="examples"><span class="exlabel">例</span><b data-ex="大気汚染防止法">大気汚染防止法</b><b data-ex="宅地建物取引業法">宅地建物取引業法</b><b data-ex="水質汚濁防止法">水質汚濁防止法</b><b data-ex="343AC0000000097">法令ID直接指定</b></div>
   <label class="toggle" style="margin:8px 2px 2px"><input type="checkbox" id="deep"> 徹底探索：施行令・施行規則以外の内閣府令・他省庁の府省令も、制定文をたどって探す（やや時間がかかります）</label>
 
   <details class="adv">
@@ -215,6 +225,7 @@
         <button class="chip warn" data-f="warn">要確認</button>
         <button class="chip none" data-f="none">未整備</button>
       </div>
+      <div class="side-h">目次</div>
       <nav class="toc" id="toc"></nav>
     </aside>
     <main class="readerwrap">
