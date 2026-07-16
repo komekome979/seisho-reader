@@ -48,7 +48,7 @@
   .btn.ghost:hover{border-color:var(--ai); background:var(--ai-tint)}
   .examples{font-size:12px; color:var(--ink-soft); margin:12px 2px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
   .examples .exlabel{color:var(--none); font-size:11.5px; letter-spacing:.06em}
-  .examples b{display:inline-block; color:var(--ai-deep); cursor:pointer; font-weight:700; font-size:12.5px; background:var(--panel); border:1px solid var(--line-strong); border-radius:999px; padding:4px 13px; transition:all .12s}
+  .examples b{display:inline-flex; align-items:center; gap:5px; color:var(--ai-deep); cursor:pointer; font-weight:700; font-size:13px; background:var(--panel); border:1px solid var(--line-strong); border-radius:999px; padding:7px 15px; transition:all .12s}
   .examples b:hover{border-color:var(--accent); background:var(--accent-tint)}
 
   details.adv{margin:10px 0 0}
@@ -217,14 +217,91 @@
   .histegov:hover{ background:#DDE8F7; border-color:var(--ai) }
   .histlink{ color:var(--ai-deep); text-decoration:none; border-bottom:1px dotted var(--ai) }
   .histlink:hover{ color:var(--ai) }
+  .scount2{ font-size:11px; color:var(--none) }
+  /* ============ 金・ダーク ヒーロー（お知り合いデザイン準拠） ============ */
+  .topbar-in{ align-items:center }
+  .brand{ display:inline-flex; align-items:center; gap:8px }
+  .brand .bicon{ width:19px; height:19px; flex:0 0 auto }
+  .brand-sub{ color:#C9B78A }
+  .hero{ background:
+      radial-gradient(130% 120% at 50% -25%, rgba(220,180,90,.16), rgba(220,180,90,0) 55%),
+      linear-gradient(180deg,#0F1117 0%,#0A0C11 100%);
+    border-bottom:3px solid #C69B3E }
+  .hero-in{ max-width:1000px; margin:0 auto; padding:24px 28px 34px }
+  .hero .mast{ padding:6px 0 0; margin:0; border:0 }
+  .mastrow{ display:flex; align-items:center; justify-content:center; gap:clamp(8px,3vw,20px) }
+  .mastrow .laurel{ width:clamp(32px,8vw,54px); height:auto; flex:0 0 auto }
+  .mastrow .laurel.r{ transform:scaleX(-1) }
+  .hero .mast h1{ display:inline-block; margin:0; padding:0; border:0; font-family:var(--serif); font-weight:700;
+    letter-spacing:.05em; line-height:1.08; font-size:clamp(30px,7.5vw,48px);
+    background:linear-gradient(180deg,#FCEEAC 0%,#EBC85C 44%,#B07E2B 100%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent }
+  .hero .mast h1:after{ display:none }
+  .mast-div{ display:flex; align-items:center; justify-content:center; gap:12px; margin:12px auto 0; max-width:360px; color:#C69B3E }
+  .mast-div:before,.mast-div:after{ content:""; height:1px; flex:1; background:linear-gradient(90deg,transparent,rgba(198,155,62,.8),transparent) }
+  .mast-div span{ font-size:11px }
+  .hero .src{ text-align:left; margin-top:18px; font-family:var(--sans); font-size:12px; color:#CBB985 }
+  .hero .src a{ color:#EBD293; border-bottom:1px dotted rgba(235,210,147,.55) }
+  .hero .fetchbar{ margin:20px 0 0; align-items:stretch }
+  .hero .qwrap label{ color:#E7D9A8; font-size:12.5px; font-weight:700; letter-spacing:.04em }
+  .hero .qwrap label:before{ content:"\25C6 "; color:#C69B3E }
+  .hero #q{ height:54px; border-radius:14px; padding:0 16px 0 46px; color:#2A2410; border:1.5px solid #C69B3E; font-size:16px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A7A4E' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E"), linear-gradient(180deg,#FBF6E9,#F1E7CE);
+    background-repeat:no-repeat,no-repeat; background-position:15px center,center; background-size:20px,auto;
+    box-shadow:0 8px 20px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.6) }
+  .hero #q::placeholder{ color:#8C7C50 }
+  .hero #q:focus{ border-color:#EBC85C; box-shadow:0 0 0 3px rgba(220,180,90,.3) }
+  .hero .btn.primary{ height:54px; border-radius:12px; font-size:15px; color:#231B06; border:1px solid #E8CA6C;
+    background:linear-gradient(180deg,#F4D780,#DBB146 55%,#B98C2E);
+    box-shadow:0 8px 18px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.5) }
+  .hero .btn.primary:hover{ background:linear-gradient(180deg,#F8E094,#E3BB52 55%,#C1952F) }
+  .hero .btn.alt{ height:54px; border-radius:12px; font-size:15px; color:#EBD293; font-weight:600;
+    background:linear-gradient(180deg,#191C24,#111319); border:1.5px solid #C69B3E }
+  .hero .btn.alt:hover{ background:#20242E; border-color:#EBC85C }
+  .hero .searchhelp{ margin:16px 0 0; text-align:left; color:#C7B583; line-height:1.85;
+    background:rgba(255,255,255,.025); border:1px solid rgba(198,155,62,.4); border-radius:12px; padding:12px 16px }
+  .hero .searchhelp b{ color:#EBD293 }
+  .hero .examples{ margin:18px 0 4px; gap:10px }
+  .hero .examples:before{ content:"\25C6 クイック検索"; display:block; width:100%; color:#E7D9A8; font-weight:700; font-size:12.5px; letter-spacing:.04em; margin-bottom:2px }
+  .hero .examples .exlabel{ display:none }
+  .hero .examples b{ color:#EBD293; font-size:13.5px; padding:10px 16px; border-radius:12px;
+    background:linear-gradient(180deg,#181B22,#101219); border:1px solid rgba(198,155,62,.55) }
+  .hero .examples b:hover{ border-color:#EBC85C; background:#1C2029 }
+  @media(max-width:600px){ .hero-in{ padding:18px 16px 26px } }
 </style>
 </head>
 <body>
-<div class="topbar"><div class="topbar-in"><span class="brand">政省令リーダー</span><span class="brand-sub">委任先を、原文で確かめる</span></div></div>
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCEEAC"/><stop offset=".5" stop-color="#E7C455"/><stop offset="1" stop-color="#A87B2C"/>
+    </linearGradient>
+    <g id="laurelBranch" fill="url(#goldGrad)">
+      <path d="M46,100 C31,87 21,65 21,41 C21,27 25,15 33,5" fill="none" stroke="url(#goldGrad)" stroke-width="2.4" stroke-linecap="round"/>
+      <ellipse cx="41" cy="86" rx="4" ry="9" transform="rotate(40 41 86)"/>
+      <ellipse cx="32" cy="72" rx="4.1" ry="9.6" transform="rotate(31 32 72)"/>
+      <ellipse cx="26" cy="57" rx="4.1" ry="10" transform="rotate(20 26 57)"/>
+      <ellipse cx="23" cy="42" rx="4.1" ry="10" transform="rotate(6 23 42)"/>
+      <ellipse cx="24" cy="27" rx="3.9" ry="9.4" transform="rotate(-9 24 27)"/>
+      <ellipse cx="29" cy="14" rx="3.4" ry="8" transform="rotate(-24 29 14)"/>
+      <ellipse cx="31" cy="80" rx="3.3" ry="7.4" transform="rotate(-42 31 80)"/>
+      <ellipse cx="25" cy="65" rx="3.3" ry="7.8" transform="rotate(-50 25 65)"/>
+      <ellipse cx="23" cy="50" rx="3.2" ry="7.6" transform="rotate(-60 23 50)"/>
+    </g>
+    <g id="bldgIcon" fill="#E9C65A">
+      <path d="M12 2 L22.5 7.2 L1.5 7.2 Z"/>
+      <rect x="3" y="8.4" width="2.6" height="8.8" rx=".3"/><rect x="8" y="8.4" width="2.6" height="8.8" rx=".3"/>
+      <rect x="13.4" y="8.4" width="2.6" height="8.8" rx=".3"/><rect x="18.4" y="8.4" width="2.6" height="8.8" rx=".3"/>
+      <rect x="1.5" y="18.2" width="21" height="2.6" rx=".4"/>
+    </g>
+  </defs>
+</svg>
+<div class="topbar"><div class="topbar-in"><span class="brand"><svg class="bicon" viewBox="0 0 24 24" aria-hidden="true"><use href="#bldgIcon"/></svg>政省令リーダー</span><span class="brand-sub">委任先を、原文で確かめる</span></div></div>
 
-<div class="wrap">
+<div class="hero"><div class="hero-in">
   <header class="mast">
-    <h1>政省令リーダー</h1>
+    <div class="mastrow"><svg class="laurel" viewBox="0 0 56 104" aria-hidden="true"><use href="#laurelBranch"/></svg><h1>政省令リーダー</h1><svg class="laurel r" viewBox="0 0 56 104" aria-hidden="true"><use href="#laurelBranch"/></svg></div>
+    <div class="mast-div"><span>◆</span></div>
     <div class="src">出典: <a href="https://laws.e-gov.go.jp/" target="_blank" rel="noopener">e-Gov法令検索</a>（デジタル庁・政府標準利用規約2.0）。最終確認は必ずe-Govの原文で。</div>
   </header>
 
@@ -233,12 +310,15 @@
       <label for="q">法令名・法令ID・条番号（例：会社法／会社法32／個人情報保護法 第20条）</label>
       <input id="q" type="text" placeholder="例：大気汚染防止法／会社法32／個人情報保護法" autocomplete="off">
     </div>
-    <button class="btn primary" id="go">法令検索</button>
-    <button class="btn alt" id="kwgo">テキスト検索</button>
+    <button class="btn primary" id="go">⚖️ 法令検索</button>
+    <button class="btn alt" id="kwgo">📄 テキスト検索</button>
   </div>
   <div class="searchhelp"><b>法令検索</b>＝法令名・法令ID・条番号で開く（例：会社法32 → 第32条へジャンプ）。／<b>テキスト検索</b>＝入力した語を含む条文をもつ法令を、e-Gov全体から探す（例：漏えい）。</div>
-  <div class="examples"><span class="exlabel">法令検索</span><b data-ex="大気汚染防止法">大気汚染防止法</b><b data-ex="資金決済法">資金決済法</b><b data-ex="個人情報保護法32">個人情報保護法32</b><span class="exlabel exlabel2">テキスト検索</span><b data-ex="漏えい" data-kw="1">漏えい</b></div>
+  <div class="examples"><span class="exlabel">法令検索</span><b data-ex="大気汚染防止法">🍃 大気汚染防止法</b><b data-ex="資金決済法">💴 資金決済法</b><b data-ex="個人情報保護法32">🔒 個人情報保護法32</b><span class="exlabel exlabel2">テキスト検索</span><b data-ex="漏えい" data-kw="1">💧 漏えい</b></div>
+  </div>
+</div>
 
+<div class="wrap">
   <div class="status" id="status"></div>
 
   <div class="toolrow">
@@ -259,7 +339,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="searchbox">
         <input id="qsearch" type="search" placeholder="条文内を検索（例：漏えい）" autocomplete="off">
-        <span class="scount"><b id="viewcount">0</b> 条を表示</span>
+        <span class="scount"><b id="viewcount">0</b> 条を表示</span><span class="scount2" id="viewcount2"></span>
       </div>
       <div class="filterbar" id="filterbar">
         <button class="chip on" data-f="all">すべて</button>
@@ -278,19 +358,6 @@
     </main>
   </div>
 
-  <details class="paste">
-    <summary>テキストを貼り付けて解析（オフライン・取得できないとき）</summary>
-    <div class="grid">
-      <div><div class="flabel">親法令の本文（「◯◯で定める」が出てくる側）</div>
-        <textarea id="pParent" placeholder="e-Govの条文をコピーして貼り付け"></textarea></div>
-      <div><div class="flabel">政省令の本文（施行令・施行規則。法令名の行で区切ると出所が出ます）</div>
-        <textarea id="pChild" placeholder="施行令・施行規則の条文を貼り付け"></textarea></div>
-    </div>
-    <div class="toolrow" style="margin-top:10px">
-      <button class="btn ghost" id="pRun">貼り付けを解析</button>
-      <button class="btn ghost" id="pSample">サンプルを読み込む</button>
-    </div>
-  </details>
 
   <footer class="foot">
     <b>仕組みと限界。</b>委任表現と子側の根拠条項を機械的に突き合わせる補助ツールで、法的判断ではありません。政令委任は施行令、省令委任は施行規則と種別を照合し、条・項レベルで紐付けます。包括委任（「その他必要な事項は政令で定める」等）や前項参照の連鎖は一意に定まらないため「要確認」、対応条文が見つからないものは「未整備」（委任先未制定＝休眠委任の可能性を含む）と表示します。号レベルの厳密特定までは行わないため、同一条項に複数の受け皿がある場合は候補を併記します。結果は必ずe-Gov等の原文で確認してください。
@@ -479,6 +546,7 @@ function splitChildSegments(text){
 let MATCHDATA={};
 let LAST_TITLE="";
 let ARTINFO={};
+let STATUSCOUNTS=null;
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
 function analyzeCore(parentArts, childArticles, lawTitle){
@@ -564,6 +632,7 @@ function analyzeCore(parentArts, childArticles, lawTitle){
   }
   reader.innerHTML=html || '<div class="empty">条文が見つかりませんでした。</div>';
   const total=counts.ok+counts.warn+counts.none;
+  STATUSCOUNTS={all:total, ok:counts.ok, warn:counts.warn, none:counts.none};
   document.getElementById("t-total").textContent=total;
   document.getElementById("t-ok").textContent=counts.ok;
   document.getElementById("t-warn").textContent=counts.warn;
@@ -605,6 +674,12 @@ function applyView(){
     li.style.display = (art && art.style.display!=="none")?"":"none";
   });
   const vc=document.getElementById("viewcount"); if(vc) vc.textContent=shown;
+  const vc2=document.getElementById("viewcount2");
+  if(vc2){
+    if(q) vc2.textContent="";
+    else if(STATUSCOUNTS){ const pc=(f==="all")?STATUSCOUNTS.all:STATUSCOUNTS[f]; vc2.textContent=" ・ 委任"+pc+"件"; }
+    else vc2.textContent="";
+  }
 }
 function setFilter(f){ CURRENT_FILTER=f; applyView(); }
 document.getElementById("filterbar").addEventListener("click",function(e){ const c=e.target.closest(".chip"); if(c) setFilter(c.getAttribute("data-f")); });
@@ -750,9 +825,9 @@ async function discoverChildren(title){
 }
 async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
   const seen={}, cand=[];
-  const queries=[]; if(parentNum) queries.push({q:parentNum,num:true}); if(parentTitle) queries.push({q:parentTitle,num:false});
+  const queries=[]; if(parentNum) queries.push({q:parentNum,num:true,lim:400}); if(parentTitle) queries.push({q:parentTitle,num:false,lim:120});
   for(const qq of queries){
-    let data; try{ data=await apiKeyword(qq.q, 100); }catch(e){ continue; }
+    let data; try{ data=await apiKeyword(qq.q, qq.lim||100); }catch(e){ continue; }
     for(const it of (data.items||data.laws||[])){
       const li=it.law_info||it; const id=li.law_id, num=li.law_num, title=li.law_title||pickTitle(it);
       if(!id || (haveIds&&haveIds[id])) continue;
@@ -765,7 +840,7 @@ async function deepDiscover(parentTitle, parentNum, haveIds, onMsg){
   const core=(parentTitle||"").replace(/(に関する法律|に関する政令|に関する省令|法律|に関する|等)$/,"").slice(0,6);
   const score=(c)=>{ let s=0; const t=c.title||""; if(c.fromNum) s+=5; if(parentTitle&&t.indexOf(parentTitle)>=0) s+=4; else if(core&&t.indexOf(core)>=0) s+=3; if(/施行(令|規則|細則)/.test(t)) s+=2; if(/(内閣府令|省令|府令|規則)/.test(t)) s+=1; return s; };
   cand.sort((a,b)=>score(b)-score(a));
-  const out=[]; let n=0; const CAP=80;
+  const out=[]; let n=0; const CAP=100;
   for(const c of cand){
     if(n>=CAP) break; n++;
     if(onMsg) onMsg(n, Math.min(cand.length,CAP), c.title||"");
@@ -846,10 +921,11 @@ async function run(){
     if(loaded.length) llhtml += ' ・ <span class="loadedtoggle">取得した政省令 '+loaded.length+'件 ▾</span><div class="loadedlist" hidden>'+loaded.map(esc).join("<br>")+'</div>';
     document.getElementById("lawlinks").innerHTML = llhtml;
     if(parsed.art) setTimeout(function(){ jumpToArticle(parsed.art, parsed.branch); },80);
-    const cnt=loaded.length ? ("受け皿: "+loaded.join("、")) : "受け皿となる政省令が見つかりませんでした。";
+    const cntShort = loaded.length>6 ? (loaded.slice(0,6).join("、")+"…ほか"+(loaded.length-6)+"件（下の「取得した政省令」で全件）") : loaded.join("、");
+    const cnt=loaded.length ? ("受け皿: "+cntShort) : "受け皿となる政省令が見つかりませんでした。";
     setStatus("完了。"+esc(cnt)+(noneCnt>0?("　未整備"+noneCnt+"件は、告示・未制定・別法令に基づく可能性があります。"):"")+"　※最終確認はe-Govの原文で。");
   }catch(err){
-    setStatus("取得できませんでした（"+esc(err.message||err)+"）。ブラウザ／ネットワークが e-Gov への直接アクセスを遮断している可能性があります。このファイルをダウンロードしてブラウザで開くか、下部の「テキストを貼り付けて解析」をお使いください。",true);
+    setStatus("取得できませんでした（"+esc(err.message||err)+"）。ブラウザ／ネットワークが e-Gov への直接アクセスを遮断している可能性があります。このファイルをダウンロードしてブラウザで開いてください。",true);
     document.getElementById("reader").innerHTML='<div class="empty">取得に失敗しました。</div>';
   }finally{
     go.disabled=false;
@@ -988,38 +1064,6 @@ function showXrefPeek(x){
   window.addEventListener("scroll",hidePeek,true);
 })();
 
-/* ---------- 貼り付けモード ---------- */
-function runPaste(){
-  const parentText=document.getElementById("pParent").value;
-  const childText=document.getElementById("pChild").value;
-  if(parentText.trim()===""){ setStatus("貼り付けモード：親法令の本文が空です。",true); return; }
-  analyzeCore(splitArticles(parentText), splitChildSegments(childText), "");
-  setStatus("貼り付けたテキストを解析しました。");
-}
-document.getElementById("pRun").addEventListener("click",runPaste);
-
-const SAMPLE_PARENT=
-`（定義）
-第二条この法律において「対象事業者」とは、政令で定める規模以上の○○事業を行う者をいう。
-（届出）
-第三条対象事業者は、主務省令で定めるところにより、その事業の内容を届け出なければならない。
-（基準の遵守）
-第三条の二対象事業者は、政令で定める基準を遵守しなければならない。
-（雑則）
-第四条前三条に定めるもののほか、この法律の実施のため必要な事項は、政令で定める。`;
-const SAMPLE_CHILD=
-`○○法施行令
-（対象事業者の規模）
-第一条法第二条に規定する政令で定める規模は、常時使用する従業員の数が三十人以上であることとする。
-
-○○法施行規則
-（届出の手続）
-第一条法第三条の規定による届出は、別記様式による届出書を主務大臣に提出して行うものとする。`;
-document.getElementById("pSample").addEventListener("click",function(){
-  document.getElementById("pParent").value=SAMPLE_PARENT;
-  document.getElementById("pChild").value=SAMPLE_CHILD;
-  runPaste();
-});
 </script>
 </body>
 </html>
