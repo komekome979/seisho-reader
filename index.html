@@ -268,6 +268,12 @@
     background:linear-gradient(180deg,#181B22,#101219); border:1px solid rgba(198,155,62,.55) }
   .hero .examples b:hover{ border-color:#EBC85C; background:#1C2029 }
   @media(max-width:600px){ .hero-in{ padding:18px 16px 26px } }
+  .tgroup{ margin:8px 0 4px; border-left:2px solid var(--line-strong) }
+  .tglaw{ font-family:var(--sans); font-weight:700; font-size:12.5px; color:var(--ai-deep); padding:2px 0 4px 10px }
+  .tgn{ font-weight:600; font-size:11px; color:var(--none); margin-left:4px }
+  .tgroup .target{ margin-left:10px }
+  .tgexpand{ margin:2px 0 6px 10px; font-family:var(--sans); font-size:11.5px; color:var(--ai); background:transparent; border:1px dashed var(--line-strong); border-radius:8px; padding:3px 10px; cursor:pointer }
+  .tgexpand:hover{ border-color:var(--ai); background:var(--ai-tint) }
 </style>
 </head>
 <body>
@@ -733,12 +739,22 @@ document.getElementById("reader").addEventListener("click",function(e){
   let inner='<div class="exhd">'+label+'<span style="margin-left:auto;font-family:var(--mono);font-weight:400;opacity:.75">'+esc(data.artNum)+'第'+data.para+'項の「'+esc(data.tt)+'」委任</span></div>';
   if(cand){ inner+='<div class="reason"><span class="why">注意：</span>「'+esc(data.artNum)+'」を参照する政省令規定はありますが、項までの機械的一致は取れていません。下記が対象の項を含むか、必ず原文でご確認ください。</div>'; }
   if(data.status==="ok" || cand){
-    for(const t of data.matches){
-      inner+='<div class="target"><span class="tnum">'+esc(t.numText)+'</span><span class="tlaw">'+esc(t.law)+'</span>';
-      if(t.caption) inner+='<span class="tcap">（'+esc(t.caption)+'）</span>';
-      if(t.cite) inner+=' <span class="cite">根拠：'+esc(t.cite)+'</span>';
-      inner+=' <button class="tmore" type="button" title="全文を表示">…</button>';
-      inner+='<div class="tbody" hidden>'+esc(t.body)+'</div></div>';
+    const _grp={}, _ord=[];
+    for(const t of data.matches){ const _key=t.law||""; if(!_grp[_key]){ _grp[_key]=[]; _ord.push(_key); } _grp[_key].push(t); }
+    const _CAP=5;
+    for(const _law of _ord){
+      const _list=_grp[_law];
+      inner+='<div class="tgroup"><div class="tglaw">'+esc(_law)+' <span class="tgn">'+_list.length+'条該当</span></div>';
+      _list.forEach(function(t,i){
+        const _h=i>=_CAP;
+        inner+='<div class="target'+(_h?" tghidden":"")+'"'+(_h?" hidden":"")+'><span class="tnum">'+esc(t.numText)+'</span>';
+        if(t.caption) inner+='<span class="tcap">（'+esc(t.caption)+'）</span>';
+        if(t.cite) inner+=' <span class="cite">根拠：'+esc(t.cite)+'</span>';
+        inner+=' <button class="tmore" type="button" title="全文を表示">…</button>';
+        inner+='<div class="tbody" hidden>'+esc(t.body)+'</div></div>';
+      });
+      if(_list.length>_CAP) inner+='<button class="tgexpand" type="button">…ほか'+(_list.length-_CAP)+'条を表示</button>';
+      inner+='</div>';
     }
   } else if(data.status==="warn"){
     inner+='<div class="reason"><span class="why">絞り切れない理由：</span>包括委任（「その他…必要な事項は…で定める」型）または前項・前条参照の連鎖にあたり、受け皿が複数条項に及ぶため一意に特定できません。該当する政省令の全体を原文で確認してください。</div>';
@@ -751,6 +767,11 @@ document.getElementById("reader").addEventListener("click",function(e){
   const m=e.target.closest(".tmore"); if(!m) return;
   const tb=m.parentElement.querySelector(".tbody"); if(!tb) return;
   if(tb.hasAttribute("hidden")){ tb.removeAttribute("hidden"); m.textContent="閉じる"; } else { tb.setAttribute("hidden",""); m.textContent="…"; }
+});
+document.getElementById("reader").addEventListener("click",function(e){
+  const b=e.target.closest(".tgexpand"); if(!b) return;
+  const grp=b.parentElement; grp.querySelectorAll(".target.tghidden").forEach(function(el){ el.removeAttribute("hidden"); el.classList.remove("tghidden"); });
+  b.remove();
 });
 
 /* ---------- 読みやすく整える ---------- */
