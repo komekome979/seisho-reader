@@ -547,7 +547,7 @@
       <select id="dietrev" class="dietsel"><option value="__all__">全期間（改正を問わず）</option></select>
       <label class="dietlbl" style="margin-top:12px">② 検索語（発言に含まれる語）</label>
       <div class="dietrow"><input id="dietq" type="text" autocomplete="off"><button id="dietgo" class="dietgo" type="button">検索</button></div>
-      <label class="dietchk"><input type="checkbox" id="dietcom" checked> 委員会に限定する（精度重視・本会議等を除く）</label>
+      <label class="dietchk"><input type="checkbox" id="dietcom" checked> 委員会・本会議に絞る（審議の中心。外すと全会議）</label>
     </div>
     <div id="dietbody" class="histbody"></div>
   </aside>
@@ -611,9 +611,9 @@ function buildAnchors(body, parentTitle){
   R=/(?:令|規則)(?=第)/g; while((m=R.exec(body))!==null){ if(m.index===0||!NAME.test(body[m.index-1])) push(m.index,false); }
   A.sort((a,b)=>a.pos-b.pos); return A;
 }
-function extractCitations(body, parentTitle){
+function extractCitations(body, parentTitle, isChild){
   const anchors=buildAnchors(body, parentTitle||"");
-  const nearest=(idx)=>{ let sc=true; for(const a of anchors){ if(a.pos<=idx) sc=a.parent; else break; } return sc; };
+  const nearest=(idx)=>{ let sc=(isChild?false:true); for(const a of anchors){ if(a.pos<=idx) sc=a.parent; else break; } return sc; };
   const out=[]; let m; CITE_RE.lastIndex=0;
   while((m=CITE_RE.exec(body))!==null){
     const ref=m[1]||""; let toParent;
@@ -774,7 +774,7 @@ function splitChildSegments(text){
   return segs.map(s=>{
     const law=s.law; let doc="";
     if(/施行令|政令/.test(law)) doc="政令"; else if(/施行規則|規則|省令|府令/.test(law)) doc="省令";
-    const arts=splitArticles(s.buf.join("\n")).map(a=>({law,docType:doc,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body,"")}));
+    const arts=splitArticles(s.buf.join("\n")).map(a=>({law,docType:doc,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body,"",true)}));
     return arts;
   }).flat();
 }
@@ -1164,7 +1164,7 @@ async function run(){
       setStatus('<span class="spin"></span>'+esc(c.title)+' を取得中…');
       try{
         const arts=await loadArticles(c.id);
-        arts.forEach(a=>childArticles.push({law:c.title,docType:c.docType,impl:true,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
+        arts.forEach(a=>childArticles.push({law:c.title,docType:c.docType,impl:true,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title, true)}));
         loaded.push(c.title);
       }catch(e){}
     }
@@ -1173,7 +1173,7 @@ async function run(){
       const deep=await deepDiscover(law.title, parentNum, haveIds,
         (i,tot,t)=>setStatus('<span class="spin"></span>府省令・他省庁令を確認中… ('+i+'/'+tot+') '+esc(t)));
       for(const r of deep){
-        r.arts.forEach(a=>childArticles.push({law:r.title,docType:r.docType,impl:!!r.impl,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title)}));
+        r.arts.forEach(a=>childArticles.push({law:r.title,docType:r.docType,impl:!!r.impl,numText:a.numText,caption:a.caption,body:a.body,cites:extractCitations(a.body, law.title, true)}));
         loaded.push(r.title);
       }
     }
@@ -1563,6 +1563,12 @@ function switchView(v){
   function esc2(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function el(id){ return document.getElementById(id); }
   function defaultTerm(title){ return (title && REV[title]) ? REV[title] : (title||""); }
+  function isBillTitle(t){ return !!t && t.length>=5 && t.indexOf("（制定")<0 && !/^[（(]/.test(t) && !/^(平成|令和|昭和|明治|大正).*第[0-9０-９〇一二三四五六七八九十]+号$/.test(t) && /法|令|規則|条約/.test(t); }
+  function selectedTerm(){
+    var sel=el("dietrev"); var v=sel?sel.value:"__all__";
+    if(v!=="__all__" && REVS[+v] && isBillTitle(REVS[+v].amLaw)) return REVS[+v].amLaw;
+    return defaultTerm(CUR.title);
+  }
   function parseDate(x){ if(!x||!/^\d{4}-\d{2}-\d{2}$/.test(x)) return null; var p=x.split("-"); var d=new Date(Date.UTC(+p[0],+p[1]-1,+p[2])); return isNaN(d.getTime())?null:d; }
   function fmtDate(d){ return d.toISOString().slice(0,10); }
   function addDays(d,n){ var x=new Date(d.getTime()); x.setUTCDate(x.getUTCDate()+n); return x; }
@@ -1608,7 +1614,7 @@ function switchView(v){
   }
   function uiLink(term,committee,win){
     var q="any="+encodeURIComponent(term);
-    if(committee) q+="&nameOfMeeting="+encodeURIComponent("委員会");
+    if(committee) q+="&nameOfMeeting="+encodeURIComponent("委員会 本会議");
     if(win){ q+="&from="+win.from+"&until="+win.until; }
     return SEARCH_UI+q;
   }
@@ -1622,9 +1628,9 @@ function switchView(v){
     var head='<a class="dietegov" href="'+uiLink(term,committee,win)+'" target="_blank" rel="noopener">この条件を国会会議録検索システムで開く ↗</a>';
     var scope = win ? ('【'+esc2(label)+'】の審議期 '+win.from+'〜'+win.until+' に限定') : '全期間（改正を問わず）';
     if(!recs.length){
-      return head+'<div class="dietsum">「'+esc2(term)+'」'+(committee?'・委員会':'')+'／'+scope+'：該当する発言は見つかりませんでした。<br>この改正は国会審議が少ない（政省令中心・整備法等）か、検索語・期間が合っていない可能性があります。委員会限定を外す・全期間にする等もお試しください。</div>';
+      return head+'<div class="dietsum">「'+esc2(term)+'」'+(committee?'・委員会/本会議':'')+'／'+scope+'：該当する発言は見つかりませんでした。<br>この改正は国会審議が少ない（政省令中心・整備法等）可能性があります。「全期間」に切り替える、検索語を変える、日本法令索引の原文で確認する等もお試しください。</div>';
     }
-    var h=head+'<div class="dietsum">'+scope+'。「'+esc2(term)+'」を含む発言 '+total+'件中、新しい順に'+recs.length+'件'+(committee?'（委員会）':'')+'。</div>';
+    var h=head+'<div class="dietsum">'+scope+'。「'+esc2(term)+'」を含む発言 '+total+'件中、新しい順に'+recs.length+'件'+(committee?'（委員会・本会議）':'')+'。</div>';
     recs.forEach(function(r){
       h+='<div class="drow"><div class="drow-meta"><span class="drow-date">'+esc2(r.date||"")+'</span>'
         +'<span class="drow-house">'+esc2(r.nameOfHouse||"")+'</span>'
@@ -1634,36 +1640,44 @@ function switchView(v){
         +(r.speechURL?'<a class="drow-lnk" href="'+esc2(r.speechURL)+'" target="_blank" rel="noopener">この発言を会議録で読む ↗</a>':(r.meetingURL?'<a class="drow-lnk" href="'+esc2(r.meetingURL)+'" target="_blank" rel="noopener">会議録を読む ↗</a>':''))
         +'</div>';
     });
-    h+='<div class="dietnote">「審議期」は各改正の公布日から逆算した推定期間での絞り込みです。束ね法（整備法等）では他の法律の審議も含まれ、確実な対応関係の判断は会議録原文で。<br>出典：国立国会図書館「国会会議録検索システム」検索用API。表示は発言の抜粋です。</div>';
+    h+='<div class="dietnote">検索語は既定でその改正の正式名（議案名）。委員会冒頭の議題宣言や本会議の趣旨説明がヒットしやすく、各リンクから会議録全体を読めます。「審議期」は公布日から逆算した推定期間で、束ね法では他法の審議も含みます。出典：国立国会図書館「国会会議録検索システム」検索用API。</div>';
     return h;
   }
   function fetchSpeech(term, committee, win){
     var url=NDL+"?any="+encodeURIComponent(term)+"&recordPacking=json&maximumRecords=20&searchRange=本文";
-    if(committee) url+="&nameOfMeeting="+encodeURIComponent("委員会");
+    if(committee) url+="&nameOfMeeting="+encodeURIComponent("委員会 本会議");
     if(win){ url+="&from="+win.from+"&until="+win.until; }
     return fetch(url).then(function(r){ if(!r.ok) throw new Error("会議録API "+r.status); return r.json(); });
   }
   function run(){
     var bd=el("dietbody"); if(!bd) return;
-    var term=(el("dietq")?el("dietq").value:"").trim();
+    var typed=(el("dietq")?el("dietq").value:"").trim();
     var committee=el("dietcom")?el("dietcom").checked:true;
     var sel=currentSel();
-    if(!term){ bd.innerHTML='<div class="dietsum">検索語を入力してください。</div>'; return; }
+    if(!typed){ bd.innerHTML='<div class="dietsum">検索語を入力してください。</div>'; return; }
     bd.innerHTML='<div class="dietsum"><span class="wspin"></span> 国会会議録を検索中…</div>';
-    fetchSpeech(term, committee, sel.win).then(function(data){
-      var recs=(data&&data.speechRecord)||[];
-      if(!recs.length && committee){
-        return fetchSpeech(term, false, sel.win).then(function(d2){
-          var extra=(d2&&d2.speechRecord&&d2.speechRecord.length)?'<div class="dietsum" style="color:var(--warn)">委員会に限定した発言は無かったため、委員会以外も含めて表示しています。</div>':'';
-          bd.innerHTML=extra+render(d2, term, false, sel.win, sel.label);
-        });
-      }
-      bd.innerHTML=render(data, term, committee, sel.win, sel.label);
-    }).catch(function(e){
-      bd.innerHTML='<div class="dietsum">この端末から国会会議録APIに直接アクセスできませんでした（'+esc2((e&&e.message)||e)+'）。下のボタンから検索システムで開けます。</div>'
-        +'<a class="dietegov" href="'+uiLink(term,committee,sel.win)+'" target="_blank" rel="noopener">この条件で国会会議録検索システムを開く ↗</a>'
-        +'<div class="dietnote">※ ブラウザの制約（CORS）でページ内表示が塞がれている可能性があります。その場合は上のリンクで確認できます（ページ内表示には中継サーバーが必要）。</div>';
-    });
+    var alt=defaultTerm(CUR.title);
+    var cands=[{t:typed,c:committee}];
+    if(committee) cands.push({t:typed,c:false});
+    if(alt && alt!==typed){ cands.push({t:alt,c:committee}); if(committee) cands.push({t:alt,c:false}); }
+    (function tryNext(i){
+      if(i>=cands.length){ bd.innerHTML=render({speechRecord:[],numberOfRecords:0}, typed, committee, sel.win, sel.label); return; }
+      var cd=cands[i];
+      fetchSpeech(cd.t, cd.c, sel.win).then(function(data){
+        var recs=(data&&data.speechRecord)||[];
+        if(!recs.length){ tryNext(i+1); return; }
+        var note='';
+        if(cd.t!==typed) note='<div class="dietsum" style="color:var(--warn)">正式名（議案名）では見つからなかったため、通称「'+esc2(cd.t)+'」で検索した結果です。</div>';
+        else if(committee && !cd.c) note='<div class="dietsum" style="color:var(--warn)">委員会・本会議では見つからなかったため、全ての会議を含めた結果です。</div>';
+        bd.innerHTML=note+render(data, cd.t, cd.c, sel.win, sel.label);
+      }).catch(function(e){
+        if(i===0){
+          bd.innerHTML='<div class="dietsum">この端末から国会会議録APIに直接アクセスできませんでした（'+esc2((e&&e.message)||e)+'）。下のボタンから検索システムで開けます。</div>'
+            +'<a class="dietegov" href="'+uiLink(typed,committee,sel.win)+'" target="_blank" rel="noopener">この条件で国会会議録検索システムを開く ↗</a>'
+            +'<div class="dietnote">※ ブラウザの制約（CORS）でページ内表示が塞がれている可能性があります。その場合は上のリンクで確認できます。</div>';
+        } else { tryNext(i+1); }
+      });
+    })(0);
   }
   function buildRevSelect(){
     var sel=el("dietrev"); if(!sel) return;
@@ -1682,7 +1696,7 @@ function switchView(v){
     ov.hidden=false; pn.hidden=false;
     if(bd) bd.innerHTML='<div class="dietsum"><span class="wspin"></span> 改正の一覧を取得中…</div>';
     if(!id){ buildRevSelect(); run(); return; }
-    apiRevisions(id).then(function(data){ REVS=extractRevs(data); buildRevSelect(); if(PRE) preselect(PRE); run(); })
+    apiRevisions(id).then(function(data){ REVS=extractRevs(data); buildRevSelect(); if(PRE) preselect(PRE); var q2=el("dietq"); if(q2) q2.value=selectedTerm(); run(); })
       .catch(function(){ REVS=[]; buildRevSelect(); run(); });
   }
   function closeDiet(){ var ov=el("dietoverlay"), pn=el("dietpanel"); if(ov) ov.hidden=true; if(pn) pn.hidden=true; }
@@ -1694,7 +1708,7 @@ function switchView(v){
   var dg=el("dietgo"); if(dg) dg.addEventListener("click",run);
   var dq=el("dietq"); if(dq) dq.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); run(); } });
   var dcom=el("dietcom"); if(dcom) dcom.addEventListener("change",run);
-  var drev=el("dietrev"); if(drev) drev.addEventListener("change",run);
+  var drev=el("dietrev"); if(drev) drev.addEventListener("change",function(){ var q=el("dietq"); if(q) q.value=selectedTerm(); run(); });
 })();
 </script>
 </body>
