@@ -156,6 +156,7 @@
   .searchbox input:focus{ outline:none; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint) }
   .searchbox .scount{ display:block; font-size:11px; color:var(--ink-soft); margin-top:5px }
   mark.hit{ background:#FCE38A; color:inherit; border-radius:2px; padding:0 1px }
+  mark.citeref{ background:var(--ai-tint); color:var(--ai-deep); font-weight:600; border-bottom:2px solid var(--ai); border-radius:2px; padding:0 1px }
   @media(min-width:860px){
     .layout.has-toc{ display:grid; grid-template-columns:264px minmax(0,1fr); gap:24px; align-items:start }
     .layout.has-toc .sidebar{ position:sticky; top:14px; max-height:calc(100vh - 28px); margin-bottom:0 }
@@ -261,10 +262,10 @@
   .hero .searchhelp{ margin:16px 0 0; text-align:left; color:#C7B583; line-height:1.85;
     background:rgba(255,255,255,.025); border:1px solid rgba(198,155,62,.4); border-radius:12px; padding:12px 16px }
   .hero .searchhelp b{ color:#EBD293 }
-  .hero .examples{ margin:18px 0 4px; gap:10px }
+  .hero .examples{ margin:18px 0 4px; gap:8px }
   .hero .examples:before{ content:"\25C6 クイック検索"; display:block; width:100%; color:#E7D9A8; font-weight:700; font-size:12.5px; letter-spacing:.04em; margin-bottom:2px }
   .hero .examples .exlabel{ display:none }
-  .hero .examples b{ color:#EBD293; font-size:13.5px; padding:10px 16px; border-radius:12px;
+  .hero .examples b{ color:#EBD293; font-size:12px; padding:6px 12px; border-radius:10px;
     background:linear-gradient(180deg,#181B22,#101219); border:1px solid rgba(198,155,62,.55) }
   .hero .examples b:hover{ border-color:#EBC85C; background:#1C2029 }
   @media(max-width:600px){ .hero-in{ padding:18px 16px 26px } }
@@ -679,6 +680,11 @@ function locateDeleg(art,pos){
   if(art.imap){ for(const s of art.imap){ if(pos>=s.start && pos<s.end){ item=s.item; if(s.para!=null) para=s.para; break; } } }
   return {para:para,item:item};
 }
+function paraMark(n){
+  if(n>=1&&n<=20) return String.fromCharCode(9311+n);   /* ①..⑳ */
+  if(n>=21&&n<=35) return String.fromCharCode(12860+n);  /* ㉑..㉟ */
+  return "("+n+")";
+}
 function treeToArticles(fullText){
   const root=findFirst(fullText,"MainProvision")||fullText, arts=[];
   for(const a of findAll(root,"Article")){
@@ -690,21 +696,31 @@ function treeToArticles(fullText){
       if(ch.tag==="ArticleCaption") caption=textOf(ch).replace(/^[（(]/,"").replace(/[）)]$/,"");
       else if(ch.tag==="ArticleTitle") title=textOf(ch).trim();
       else if(ch.tag==="Paragraph"){
-        const ptext=textOf(ch), pstart=off;
+        const pstart=off;
         let pnum=paras.length+1;
         const pn=findFirst(ch,"ParagraphNum");
         if(pn){ const t=textOf(pn).replace(/[０-９]/g,function(c){return "０１２３４５６７８９".indexOf(c);}); const nn=parseInt(t,10); if(!isNaN(nn)&&nn>0) pnum=nn; }
-        pmap.push({start:pstart,end:pstart+ptext.length,para:pnum});
-        let coff=pstart;
+        /* 号は行を分ける。第2項以降は項番号（②③…）を付す（第1項は無番号）。 */
+        let sent="", items=[];
         for(const cc of (ch.children||[])){
-          const ctext=textOf(cc);
-          if(cc&&typeof cc==="object"&&cc.tag==="Item"){
-            let inum=kanjiToInt(textOf(findFirst(cc,"ItemTitle")||""));
-            if((inum==null||isNaN(inum))&&cc.attr&&cc.attr.Num) inum=kanjiToInt(String(cc.attr.Num).split(/[_:\-]/)[0]);
-            imap.push({start:coff,end:coff+ctext.length,para:pnum,item:(isNaN(inum)?null:inum)});
-          }
-          coff+=ctext.length;
+          if(!cc||typeof cc!=="object") continue;
+          if(cc.tag==="ParagraphNum") continue;
+          if(cc.tag==="Item") items.push(cc);
+          else sent+=textOf(cc);
         }
+        const head=(pnum>1?paraMark(pnum)+" ":"")+sent;
+        let lines=[head], coff=pstart+head.length+1;
+        for(const it of items){
+          const _tt=findFirst(it,"ItemTitle"), _ttl=_tt?textOf(_tt):"";
+          let itext=textOf(it);
+          if(_ttl && itext.indexOf(_ttl)===0) itext=_ttl+" "+itext.slice(_ttl.length);
+          let inum=kanjiToInt(_ttl);
+          if((inum==null||isNaN(inum))&&it.attr&&it.attr.Num) inum=kanjiToInt(String(it.attr.Num).split(/[_:\-]/)[0]);
+          imap.push({start:coff,end:coff+itext.length,para:pnum,item:(isNaN(inum)?null:inum)});
+          lines.push(itext); coff+=itext.length+1;
+        }
+        const ptext=lines.join("\n");
+        pmap.push({start:pstart,end:pstart+ptext.length,para:pnum});
         paras.push(ptext);
         off=pstart+ptext.length+1;
       }
@@ -755,6 +771,7 @@ let LAST_TITLE="";
 let ARTINFO={};
 let STATUSCOUNTS=null;
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function hlCite(bodyStr, citeStr){ var b=esc(bodyStr||""); if(!citeStr) return b; var c=esc(citeStr); if(!c) return b; return b.split(c).join('<mark class="citeref">'+c+'</mark>'); }
 
 function analyzeCore(parentArts, childArticles, lawTitle){
   MATCHDATA={}; LAST_TITLE=lawTitle||"";
@@ -925,7 +942,7 @@ document.getElementById("reader").addEventListener("click",function(e){
         if(t.caption) inner+='<span class="tcap">（'+esc(t.caption)+'）</span>';
         if(t.cite) inner+=' <span class="cite">根拠：'+esc(t.cite)+'</span>';
         inner+=' <button class="tmore" type="button" title="全文を表示">…</button>';
-        inner+='<div class="tbody" hidden>'+esc(t.body)+'</div></div>';
+        inner+='<div class="tbody" hidden>'+hlCite(t.body,t.cite)+'</div></div>';
       });
       if(_list.length>_CAP) inner+='<button class="tgexpand" type="button">…ほか'+(_list.length-_CAP)+'条を表示</button>';
       inner+='</div>';
