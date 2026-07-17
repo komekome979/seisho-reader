@@ -685,6 +685,21 @@ function paraMark(n){
   if(n>=21&&n<=35) return String.fromCharCode(12860+n);  /* ㉑..㉟ */
   return "("+n+")";
 }
+/* 号・号の細分（イロハ→(1)(2)→(i)(ii)）を各行に分け、階層ごとに字下げ */
+function renderItemNode(node, indent){
+  var titleNode=null, sent="", subs=[];
+  for(const c of (node.children||[])){
+    if(!c||typeof c!=="object") continue;
+    var tg=c.tag||"";
+    if(/Title$/.test(tg)){ titleNode=c; }
+    else if(/^Subitem\d+$/.test(tg)){ subs.push(c); }
+    else { sent+=textOf(c); }
+  }
+  var title=titleNode?textOf(titleNode):"";
+  var out=indent+(title?(title+" "+sent):sent);
+  for(var i=0;i<subs.length;i++){ out+="\n"+renderItemNode(subs[i], indent+"\u3000"); }
+  return out;
+}
 function treeToArticles(fullText){
   const root=findFirst(fullText,"MainProvision")||fullText, arts=[];
   for(const a of findAll(root,"Article")){
@@ -712,8 +727,7 @@ function treeToArticles(fullText){
         let lines=[head], coff=pstart+head.length+1;
         for(const it of items){
           const _tt=findFirst(it,"ItemTitle"), _ttl=_tt?textOf(_tt):"";
-          let itext=textOf(it);
-          if(_ttl && itext.indexOf(_ttl)===0) itext=_ttl+" "+itext.slice(_ttl.length);
+          const itext=renderItemNode(it,"");
           let inum=kanjiToInt(_ttl);
           if((inum==null||isNaN(inum))&&it.attr&&it.attr.Num) inum=kanjiToInt(String(it.attr.Num).split(/[_:\-]/)[0]);
           imap.push({start:coff,end:coff+itext.length,para:pnum,item:(isNaN(inum)?null:inum)});
